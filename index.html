@@ -394,6 +394,11 @@
                     <input type="text" id="employeeId" placeholder="Məsələn: 100001" required autocomplete="off">
                 </div>
                 
+                <div class="form-group">
+                    <label for="employeePass">Parol *</label>
+                    <input type="password" id="employeePass" placeholder="Şifrənizi daxil edin" required autocomplete="off">
+                </div>
+                
                 <button type="submit" class="btn btn-primary" id="loginBtn">
                     Daxil Ol
                 </button>
@@ -449,7 +454,7 @@
         // KONFİQURASİYA
         // ==========================================
         // ÖZ WEB APP URL-NİZİ BURAYA YAZIN (SONDA BOŞLUQ OLMASIN!)
-        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzY5KXqEzP2rxdO739Cb2cXEf-IOX1FFbOfiNsEHFLckXplkFqa0PpjVgjlX-dTvFGh/exec';
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbySlVGjwLgqLoEFL8XXKu-o1lXiPwo7Bmg76mUkIqTU9glqCMSLyI0xuhw0TuOsPa10/exec';
         
         const TICKET_TYPES = [
             { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
@@ -464,16 +469,17 @@
         let refreshInterval = null;
 
         // ==========================================
-        // LOGIN - Yalnız Online (Offline yoxdur!)
+        // LOGIN - ID və Parol ilə
         // ==========================================
         async function handleLogin(e) {
             e.preventDefault();
             const empId = document.getElementById('employeeId').value.trim();
+            const empPass = document.getElementById('employeePass').value.trim();
             const errorMsg = document.getElementById('errorMsg');
             const loginBtn = document.getElementById('loginBtn');
             
-            if (!empId) {
-                showError('❌ ID daxil edin!');
+            if (!empId || !empPass) {
+                showError('❌ ID və parol daxil edin!');
                 return;
             }
 
@@ -482,22 +488,26 @@
             loginBtn.innerHTML = 'Yoxlanılır... <span class="loading"></span>';
 
             try {
-                // JSONP ilə sorğu
-                const data = await fetchJSONP(`${SHEET_API_URL}?action=getEmployeeById&id=${encodeURIComponent(empId)}`);
+                // JSONP ilə sorğu - ID və parol göndərilir
+                const data = await fetchJSONP(`${SHEET_API_URL}?action=login&id=${encodeURIComponent(empId)}&pass=${encodeURIComponent(empPass)}`);
                 
                 console.log('Server cavabı:', data);
                 
                 if (data.status === 'success' && data.employee) {
-                    // Uğurlu giriş
+                    // Uğurlu giriş - Sheet-dən gələn məlumatlar
                     currentEmployee = {
                         id: empId,
-                        fullName: data.employee.fullName || data.employee.name || 'İşçi ' + empId
+                        fullName: data.employee.fullName || data.employee.name || 'İşçi ' + empId,
+                        fatherName: data.employee.fatherName || ''
                     };
                     
-                    // Session üçün yaddaşda saxla
-                    sessionStorage.setItem('currentEmployee', JSON.stringify(currentEmployee));
+                    // LocalStorage-da yadda saxla (bir dəfə giriş üçün)
+                    localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
+                    localStorage.setItem('ghg_login_date', new Date().toDateString());
                     
                     enterApp();
+                } else if (data.status === 'invalid_pass') {
+                    showError('❌ Yanlış parol!');
                 } else if (data.status === 'not_found') {
                     showError('❌ İşçi tapılmadı! ID-ni yoxlayın.');
                 } else {
@@ -567,7 +577,11 @@
         function enterApp() {
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
-            document.getElementById('displayName').textContent = currentEmployee.fullName;
+            
+            // Ad Soyad Ata adı göstər
+            const fullName = currentEmployee.fullName;
+            const fatherName = currentEmployee.fatherName ? ` ${currentEmployee.fatherName} oğlu` : '';
+            document.getElementById('displayName').textContent = fullName + fatherName;
             document.getElementById('displayId').textContent = currentEmployee.id;
             
             startAutoRefresh();
@@ -578,7 +592,11 @@
             ticketsData = {};
             if (refreshInterval) clearInterval(refreshInterval);
             
-            sessionStorage.removeItem('currentEmployee');
+            // LocalStorage təmizlə
+            localStorage.removeItem('ghg_employee');
+            localStorage.removeItem('ghg_login_date');
+            localStorage.removeItem(`tickets_${currentEmployee?.id}`);
+            localStorage.removeItem(`lastRefresh_${currentEmployee?.id}`);
             
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('loginPage').style.display = 'flex';
@@ -587,16 +605,20 @@
         }
 
         // ==========================================
-        // QR SİSTEMİ
+        // QR SİSTEMİ - Hər gün avtomatik yenilənmə
         // ==========================================
         function checkDailyRefresh() {
             if (!currentEmployee) return;
+            
             const today = new Date().toDateString();
             const lastRefresh = localStorage.getItem(`lastRefresh_${currentEmployee.id}`);
+            const savedDate = localStorage.getItem(`ticketDate_${currentEmployee.id}`);
             
-            if (lastRefresh !== today) {
+            // Yeni gündürsə və ya ilk dəfədirsə yenilə
+            if (savedDate !== today || !lastRefresh) {
                 refreshAllTickets();
-                localStorage.setItem(`lastRefresh_${currentEmployee.id}`, today);
+                localStorage.setItem(`lastRefresh_${currentEmployee.id}`, new Date().toISOString());
+                localStorage.setItem(`ticketDate_${currentEmployee.id}`, today);
             } else {
                 loadTodayData();
             }
@@ -606,12 +628,14 @@
         function refreshAllTickets() {
             const today = new Date();
             const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+            const randomSuffix = Math.floor(1000 + Math.random() * 9000);
             
             TICKET_TYPES.forEach(type => {
+                // Hər gün yeni QR kod yaradılır
                 ticketsData[type.id] = {
                     used: false,
                     usedTime: null,
-                    qrCode: `GHG|${currentEmployee.id}|${type.code}|${dateStr}|${Math.floor(1000 + Math.random() * 9000)}`
+                    qrCode: `GHG|${currentEmployee.id}|${type.code}|${dateStr}|${randomSuffix}|${type.id}`
                 };
             });
 
@@ -621,10 +645,14 @@
 
         function loadTodayData() {
             const saved = localStorage.getItem(`tickets_${currentEmployee.id}`);
-            if (saved) {
+            const savedDate = localStorage.getItem(`ticketDate_${currentEmployee.id}`);
+            const today = new Date().toDateString();
+            
+            if (saved && savedDate === today) {
                 ticketsData = JSON.parse(saved);
                 generateCards();
             } else {
+                // Köhnə məlumatları sil, yenilə
                 refreshAllTickets();
             }
         }
@@ -635,12 +663,18 @@
 
         function updateRefreshDisplay() {
             const lastRefresh = localStorage.getItem(`lastRefresh_${currentEmployee.id}`);
-            document.getElementById('lastRefresh').textContent = lastRefresh ? 
-                new Date(lastRefresh).toLocaleDateString('az-AZ') : 'Bugün';
+            if (lastRefresh) {
+                const date = new Date(lastRefresh);
+                document.getElementById('lastRefresh').textContent = 
+                    date.toLocaleDateString('az-AZ') + ' ' + date.toLocaleTimeString('az-AZ');
+            } else {
+                document.getElementById('lastRefresh').textContent = 'Bugün';
+            }
         }
 
         function startAutoRefresh() {
             checkDailyRefresh();
+            // Hər dəqiqə yoxla (gün dəyişibsə yenilə)
             refreshInterval = setInterval(checkDailyRefresh, 60000);
         }
 
@@ -715,7 +749,7 @@
                     correctLevel: QRCode.CorrectLevel.H
                 });
             } catch (e) {
-                qrDiv.innerHTML = '<div style="color:red; padding:20px;">❌ QR Kod Xətası</div>';
+                qrqrDiv.innerHTML = '<div style="color:red; padding:20px;">❌ QR Kod Xətası</div>';
             }
             
             document.getElementById('qrModal').style.display = 'flex';
@@ -729,18 +763,25 @@
         }
 
         // ==========================================
-        // BAŞLANĞIC
+        // BAŞLANĞIC - Bir dəfə giriş yoxlaması
         // ==========================================
         window.onload = function() {
-            const sessionData = sessionStorage.getItem('currentEmployee');
+            // LocalStorage-da əvvəlki giriş varmı yoxla
+            const savedEmployee = localStorage.getItem('ghg_employee');
+            const loginDate = localStorage.getItem('ghg_login_date');
+            const today = new Date().toDateString();
             
-            if (sessionData) {
+            if (savedEmployee) {
                 try {
-                    currentEmployee = JSON.parse(sessionData);
+                    currentEmployee = JSON.parse(savedEmployee);
+                    
+                    // Əgər bu gün login olunubsa və ya ümumiyyətlə login qalıbsa
+                    // İstifadəçi çıxış etməyibsə avtomatik daxil ol
                     document.getElementById('employeeId').value = currentEmployee.id;
                     enterApp();
                 } catch (e) {
-                    console.error('Session oxuma xətası:', e);
+                    console.error('LocalStorage oxuma xətası:', e);
+                    localStorage.removeItem('ghg_employee');
                 }
             }
         };
