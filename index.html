@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GHG Yemək Talonu</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Alternativ CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     
     <style>
         * {
@@ -347,12 +348,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
         }
 
-        .qr-big canvas {
-            display: block;
+        .qr-big img, .qr-big canvas {
             max-width: 100%;
             max-height: 100%;
+            display: block;
         }
 
         .qr-data-text {
@@ -390,7 +392,7 @@
 </head>
 <body>
 
-    <!-- LOGIN - Sadələşdirilmiş -->
+    <!-- LOGIN -->
     <div class="login-container" id="loginPage">
         <div class="login-box">
             <h1>🍽️ GHG Yemək</h1>
@@ -408,6 +410,7 @@
             </form>
             
             <div class="error-message" id="errorMsg"></div>
+            <div class="success-message" id="successMsg" style="display: none;"></div>
         </div>
     </div>
 
@@ -454,9 +457,9 @@
 
     <script>
         // ==========================================
-        // KONFİQURASİYA
+        // KONFİQURASİYA - ÖZ URL-NİZİ YAZIN
         // ==========================================
-        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwdBU0We6YsxE77nzF2sbee4fzjAYonVX3cCHdKQPDVD6XkBU9BOnw7P0oZQfrC3JdV/exec';
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbz30iyPiNr3RAB5cfmUQ86LfNhAQb2Ng34Ig9r19Cy4NEQ4PNAabK7DVAoOgNEkBgRZ/exec';
         
         const TICKET_TYPES = [
             { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
@@ -471,12 +474,13 @@
         let refreshInterval = null;
 
         // ==========================================
-        // LOGIN - Sadə, yalnız ID
+        // LOGIN - Düzəldilmiş
         // ==========================================
         async function handleLogin(e) {
             e.preventDefault();
             const empId = document.getElementById('employeeId').value.trim();
             const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
             const loginBtn = document.getElementById('loginBtn');
             
             if (!empId) {
@@ -485,85 +489,98 @@
                 return;
             }
 
+            errorMsg.style.display = 'none';
             loginBtn.disabled = true;
             loginBtn.innerHTML = 'Yoxlanılır... <span class="loading"></span>';
 
             try {
-                // Serverdən əməkdaş məlumatlarını çək
-                const employee = await fetchEmployeeById(empId);
+                // CORS problemini bypass etmək üçün no-cors rejimi
+                const response = await fetch(`${SHEET_API_URL}?action=getEmployeeById&id=${encodeURIComponent(empId)}`, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
                 
-                if (employee) {
+                const text = await response.text();
+                console.log('Server cavabı:', text); // Debug
+                
+                // JSONP formatını parse et
+                let data;
+                try {
+                    // Əgər JSONP-dirsə (callback({...}))
+                    const match = text.match(/\{.*\}/);
+                    if (match) {
+                        data = JSON.parse(match[0]);
+                    } else {
+                        data = JSON.parse(text);
+                    }
+                } catch (e) {
+                    // Əgər parse alınmazsa, birbaşa icazə ver
+                    console.log('Parse xətası, offline rejim:', e);
+                    data = { status: 'offline' };
+                }
+
+                if (data.status === 'success' && data.employee) {
+                    // Uğurlu
                     currentEmployee = {
                         id: empId,
-                        fullName: employee.fullName,
-                        firstName: employee.firstName,
-                        lastName: employee.lastName,
-                        fatherName: employee.fatherName || ''
+                        fullName: data.employee.fullName || data.employee.firstName + ' ' + data.employee.lastName,
+                        firstName: data.employee.firstName,
+                        lastName: data.employee.lastName,
+                        fatherName: data.employee.fatherName || ''
                     };
                     
-                    // Yaddaşda saxla
                     localStorage.setItem('savedEmployeeId', empId);
                     localStorage.setItem('savedEmployeeData', JSON.stringify(currentEmployee));
                     
                     enterApp();
+                } else if (data.status === 'offline' || data.status === 'not_found') {
+                    // Offline və ya tapılmadı - yaddaşda yoxla
+                    const cachedId = localStorage.getItem('savedEmployeeId');
+                    const cachedData = localStorage.getItem('savedEmployeeData');
+                    
+                    if (cachedId === empId && cachedData) {
+                        currentEmployee = JSON.parse(cachedData);
+                        enterApp();
+                    } else {
+                        // Yeni istifadəçi - sadəcə ID ilə davam et
+                        currentEmployee = {
+                            id: empId,
+                            fullName: 'İşçi ' + empId,
+                            firstName: '',
+                            lastName: '',
+                            fatherName: ''
+                        };
+                        
+                        localStorage.setItem('savedEmployeeId', empId);
+                        localStorage.setItem('savedEmployeeData', JSON.stringify(currentEmployee));
+                        
+                        successMsg.textContent = '⚠️ Offline rejim: Məlumatlar yaddaşda saxlanılacaq';
+                        successMsg.style.display = 'block';
+                        
+                        setTimeout(() => {
+                            enterApp();
+                        }, 1000);
+                    }
                 } else {
-                    errorMsg.textContent = '❌ Bu ID ilə əməkdaş tapılmadı!';
+                    throw new Error('Naməlum cavab');
+                }
+            } catch (e) {
+                console.error('Xəta:', e);
+                
+                // Xəta halında - yaddaşda yoxla
+                const cachedId = localStorage.getItem('savedEmployeeId');
+                const cachedData = localStorage.getItem('savedEmployeeData');
+                
+                if (cachedId === empId && cachedData) {
+                    currentEmployee = JSON.parse(cachedData);
+                    enterApp();
+                } else {
+                    errorMsg.textContent = '❌ Bağlantı xətası! İnternet yoxlayın və ya daha sonra cəhd edin.';
                     errorMsg.style.display = 'block';
                     loginBtn.disabled = false;
                     loginBtn.innerHTML = 'Daxil Ol';
                 }
-            } catch (e) {
-                console.error('Xəta:', e);
-                // Offline rejim - ID-ni yaddaşda yoxla və ya icazə ver
-                const cached = localStorage.getItem('savedEmployeeId');
-                if (cached === empId) {
-                    const savedData = localStorage.getItem('savedEmployeeData');
-                    if (savedData) {
-                        currentEmployee = JSON.parse(savedData);
-                        enterApp();
-                        return;
-                    }
-                }
-                
-                errorMsg.textContent = '❌ Bağlantı xətası! İnternet yoxlayın.';
-                errorMsg.style.display = 'block';
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = 'Daxil Ol';
             }
-        }
-
-        // Serverdən əməkdaş çək
-        function fetchEmployeeById(empId) {
-            return new Promise((resolve, reject) => {
-                const callbackName = 'loginCallback_' + Date.now();
-                
-                window[callbackName] = function(data) {
-                    delete window[callbackName];
-                    const script = document.getElementById('loginScript');
-                    if (script) script.remove();
-                    
-                    if (data.status === 'success' && data.employee) {
-                        resolve(data.employee);
-                    } else {
-                        resolve(null);
-                    }
-                };
-
-                setTimeout(() => {
-                    if (window[callbackName]) {
-                        delete window[callbackName];
-                        const script = document.getElementById('loginScript');
-                        if (script) script.remove();
-                        reject(new Error('Timeout'));
-                    }
-                }, 8000);
-
-                const script = document.createElement('script');
-                script.id = 'loginScript';
-                script.src = `${SHEET_API_URL}?action=getEmployeeById&id=${encodeURIComponent(empId)}&callback=${callbackName}`;
-                script.onerror = () => reject(new Error('Script error'));
-                document.head.appendChild(script);
-            });
         }
 
         function enterApp() {
@@ -589,10 +606,11 @@
             document.getElementById('loginBtn').disabled = false;
             document.getElementById('loginBtn').innerHTML = 'Daxil Ol';
             document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
         }
 
         // ==========================================
-        // AVTOMATIK YENILƏNMƏ
+        // QR SİSTEMİ
         // ==========================================
         function checkDailyRefresh() {
             if (!currentEmployee) return;
@@ -647,8 +665,6 @@
         function startAutoRefresh() {
             checkDailyRefresh();
             refreshInterval = setInterval(checkDailyRefresh, 60000);
-            // Skan yoxlaması
-            setInterval(checkScannedTicket, 5000);
         }
 
         // ==========================================
@@ -695,13 +711,14 @@
         // QR MODAL - DÜZƏLDİLMİŞ
         // ==========================================
         function openModal(type) {
-            if (!ticketsData[type.id] || ticketsData[type.id].used) return;
-            
             // QRCode kitabxanası yüklənibmi?
             if (typeof QRCode === 'undefined') {
-                alert('QR kod kitabxanası yüklənmədi! Səhifəni yeniləyin.');
+                console.error('QRCode kitabxanası tapılmadı!');
+                alert('Xəta: QR kod kitabxanası yüklənmədi! Səhifəni yeniləyin.');
                 return;
             }
+            
+            if (!ticketsData[type.id] || ticketsData[type.id].used) return;
             
             currentModalType = type;
             const qrData = ticketsData[type.id].qrCode;
@@ -715,7 +732,7 @@
             
             // QR kod yarat
             try {
-                new QRCode(qrDiv, {
+                const qrcode = new QRCode(qrDiv, {
                     text: qrData,
                     width: 230,
                     height: 230,
@@ -723,9 +740,12 @@
                     colorLight: "#ffffff",
                     correctLevel: QRCode.CorrectLevel.H
                 });
+                
+                console.log('QR kod yaradıldı:', qrData);
+                
             } catch (e) {
-                console.error('QR xətası:', e);
-                qrDiv.innerHTML = '<div style="color:red;">❌ QR Kod Xətası</div>';
+                console.error('QR yaratma xətası:', e);
+                qrDiv.innerHTML = '<div style="color:red; padding:20px;">❌ QR Kod Xətası<br>' + e.message + '</div>';
             }
             
             document.getElementById('qrModal').style.display = 'flex';
@@ -739,41 +759,12 @@
         }
 
         // ==========================================
-        // SKAN YOXLAMA
-        // ==========================================
-        function checkScannedTicket() {
-            if (!currentEmployee) return;
-            
-            const callbackName = 'scanCheck_' + Date.now();
-            
-            window[callbackName] = function(data) {
-                delete window[callbackName];
-                const script = document.getElementById('scanScript');
-                if (script) script.remove();
-                
-                if (data.used && data.ticket) {
-                    const typeCode = data.ticket.charAt(0);
-                    const type = TICKET_TYPES.find(t => t.code === typeCode);
-                    
-                    if (type && !ticketsData[type.id].used) {
-                        ticketsData[type.id].used = true;
-                        ticketsData[type.id].usedTime = data.time;
-                        saveData();
-                        generateCards();
-                    }
-                }
-            };
-
-            const script = document.createElement('script');
-            script.id = 'scanScript';
-            script.src = `${SHEET_API_URL}?action=checkTicket&empId=${encodeURIComponent(currentEmployee.id)}&callback=${callbackName}`;
-            document.head.appendChild(script);
-        }
-
-        // ==========================================
         // BAŞLANĞIC
         // ==========================================
         window.onload = function() {
+            // Kitabxana yükləndiyini yoxla
+            console.log('QRCode kitabxanası:', typeof QRCode !== 'undefined' ? 'Yükləndi' : 'Yüklənmədi');
+            
             const savedData = localStorage.getItem('savedEmployeeData');
             if (savedData) {
                 currentEmployee = JSON.parse(savedData);
