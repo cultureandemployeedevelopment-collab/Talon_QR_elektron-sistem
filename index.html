@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GHG Yemək Talonu</title>
     
-    <!-- QRCode.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     
     <style>
@@ -188,17 +187,6 @@
 
         .info-box strong { display: block; margin-bottom: 5px; font-size: 1.05em; }
 
-        .refresh-status {
-            background: #e3f2fd;
-            color: #1565c0;
-            padding: 10px 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 0.85em;
-            text-align: center;
-            border-left: 4px solid #1976d2;
-        }
-
         .section {
             background: white;
             border-radius: 20px;
@@ -207,78 +195,119 @@
             margin: 0 5px;
         }
 
-        .qr-grid {
+        /* YENİ: 4 Talon Grid */
+        .ticket-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 15px;
             margin-top: 15px;
         }
 
-        .qr-card {
+        .ticket-card {
             background: #f8f9fa;
             border-radius: 16px;
-            padding: 18px 12px;
+            padding: 20px 15px;
             text-align: center;
-            border: 2px solid #e0e0e0;
-            transition: all 0.2s;
+            border: 3px solid #e0e0e0;
+            transition: all 0.3s;
             cursor: pointer;
             position: relative;
-            overflow: hidden;
         }
 
-        .qr-card:active:not(.used):not(.disabled) {
-            transform: scale(0.95);
+        .ticket-card:hover:not(.used):not(.disabled) {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
             border-color: #667eea;
         }
 
-        .qr-card.used {
+        .ticket-card:active:not(.used):not(.disabled) {
+            transform: scale(0.95);
+        }
+
+        /* Seçilmiş talon */
+        .ticket-card.selected {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+        }
+
+        /* İstifadə edilmiş talon */
+        .ticket-card.used {
             background: #ffebee;
             border-color: #ef5350;
             cursor: not-allowed;
+            opacity: 0.8;
         }
 
-        .qr-card.used .qr-icon { display: none; }
-
-        .qr-card.used::before {
-            content: '✓';
-            font-size: 50px;
-            color: #4caf50;
-            display: block;
-            margin: 10px 0;
+        .ticket-card.used::after {
+            content: '✓ İSTİFADƏ EDİLDİ';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(244, 67, 54, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8em;
             font-weight: bold;
         }
 
-        .qr-card.disabled {
+        /* Deaktiv talon (başqa seçilib) */
+        .ticket-card.disabled {
             background: #eceff1;
             border-color: #b0bec5;
             cursor: not-allowed;
-            opacity: 0.6;
+            opacity: 0.5;
         }
 
-        .qr-card.disabled .qr-icon {
+        .ticket-card.disabled .ticket-icon {
             filter: grayscale(100%);
             opacity: 0.4;
-            font-size: 40px;
         }
 
-        .qr-card h3 { color: #333; margin-bottom: 6px; font-size: 0.95em; font-weight: 600; }
-        .qr-time { color: #666; font-size: 0.75em; margin-bottom: 10px; }
-        .qr-icon { font-size: 42px; margin: 12px 0; line-height: 1; }
+        .ticket-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
 
-        .qr-status {
+        .ticket-name {
+            font-weight: 700;
+            color: #333;
+            font-size: 1em;
+            margin-bottom: 5px;
+        }
+
+        .ticket-time {
+            color: #666;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+        }
+
+        .ticket-status {
             display: inline-block;
-            padding: 6px 14px;
-            border-radius: 20px;
+            padding: 6px 12px;
+            border-radius: 15px;
             font-size: 0.75em;
             font-weight: bold;
         }
 
-        .status-active { background: #4caf50; color: white; }
-        .status-used { background: #f44336; color: white; }
-        .status-disabled { background: #78909c; color: white; }
+        .status-active {
+            background: #4caf50;
+            color: white;
+        }
 
-        .used-info { margin-top: 8px; font-size: 0.7em; color: #666; }
+        .status-used {
+            background: #f44336;
+            color: white;
+        }
 
+        .status-disabled {
+            background: #78909c;
+            color: white;
+        }
+
+        /* QR Modal */
         .qr-modal {
             display: none;
             position: fixed;
@@ -301,11 +330,11 @@
             width: 100%;
             max-width: 380px;
             position: relative;
-            animation: zoomIn 0.2s;
+            animation: zoomIn 0.3s;
         }
 
         @keyframes zoomIn {
-            from { transform: scale(0.9); opacity: 0; }
+            from { transform: scale(0.8); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
 
@@ -316,67 +345,50 @@
             font-size: 32px;
             cursor: pointer;
             color: #666;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
         }
-
-        .qr-modal h2 { color: #333; margin-bottom: 8px; font-size: 1.4em; }
-        .qr-modal-time { color: #666; margin-bottom: 20px; font-size: 0.95em; }
 
         .qr-big {
             width: 250px;
             height: 250px;
-            margin: 0 auto 20px;
-            padding: 10px;
+            margin: 20px auto;
+            padding: 15px;
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
         }
 
-        .qr-big img, .qr-big canvas {
-            max-width: 100%;
-            max-height: 100%;
-            display: block;
-        }
-
-        .qr-data-text {
+        .qr-info {
             background: #f5f5f5;
-            padding: 10px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 0.75em;
-            color: #333;
-            margin-bottom: 15px;
-            word-break: break-all;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            text-align: left;
         }
 
-        .btn-cancel {
-            background: #e0e0e0;
-            color: #333;
-            padding: 14px 30px;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 1em;
+        .qr-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .qr-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .qr-info-label {
+            color: #666;
+        }
+
+        .qr-info-value {
             font-weight: 600;
-            width: 100%;
+            color: #333;
         }
 
         @media (min-width: 768px) {
             body { padding: 20px; }
-            .qr-grid { grid-template-columns: repeat(4, 1fr); gap: 15px; }
-            .qr-card { padding: 25px 15px; }
-            .qr-card h3 { font-size: 1.1em; }
-            .qr-icon { font-size: 50px; }
-            .qr-big { width: 300px; height: 300px; }
+            .ticket-grid { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+            .ticket-card { padding: 25px 20px; }
         }
     </style>
 </head>
@@ -423,15 +435,14 @@
 
             <div class="section">
                 <div class="info-box">
-                    <strong>⚠️ Gündə yalnız 1 talon!</strong>
-                    Bir talon skan edildikdə digərləri avtomatik deaktiv olur.
+                    <strong>⚠️ Diqqət!</strong>
+                    Gündə yalnız <b>1 talon</b> istifadə edə bilərsiniz. 
+                    Seçdiyiniz talonu skan etdikdən sonra digərləri avtomatik deaktiv olacaq.
                 </div>
 
-                <div class="refresh-status" id="refreshStatus">
-                    🔄 Son yenilənmə: <span id="lastRefresh">Yoxlanılır...</span>
+                <div id="ticketContainer" class="ticket-grid">
+                    <!-- Talonlar buraya əlavə olunacaq -->
                 </div>
-
-                <div id="qrContainer" class="qr-grid"></div>
             </div>
         </div>
     </div>
@@ -440,12 +451,30 @@
     <div class="qr-modal" id="qrModal" onclick="closeModal(event)">
         <div class="qr-modal-content" onclick="event.stopPropagation()">
             <span class="qr-modal-close" onclick="closeModal()">&times;</span>
-            <h2 id="modalTitle">Yemək</h2>
-            <p class="qr-modal-time" id="modalTime">Vaxt</p>
+            <h2 id="modalTitle">🎫 Talonunuz Hazırdır</h2>
+            
+            <div class="qr-info">
+                <div class="qr-info-row">
+                    <span class="qr-info-label">Əməkdaş:</span>
+                    <span class="qr-info-value" id="qrEmpName">-</span>
+                </div>
+                <div class="qr-info-row">
+                    <span class="qr-info-label">ID:</span>
+                    <span class="qr-info-value" id="qrEmpId">-</span>
+                </div>
+                <div class="qr-info-row">
+                    <span class="qr-info-label">Talon:</span>
+                    <span class="qr-info-value" id="qrTicketType">-</span>
+                </div>
+            </div>
+            
             <div class="qr-big" id="modalQR"></div>
-            <div class="qr-data-text" id="qrDataText"></div>
-            <p style="color: #666; font-size: 0.85em; margin-bottom: 15px;">Bu kodu skanerə göstərin</p>
-            <button class="btn-cancel" onclick="closeModal()">Bağla</button>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
+                Bu kodu kafedəki skanerə göstərin
+            </p>
+            <button class="btn btn-primary" onclick="closeModal()" style="width: auto; padding: 12px 30px;">
+                Bağla
+            </button>
         </div>
     </div>
 
@@ -453,29 +482,27 @@
         // ==========================================
         // KONFİQURASİYA
         // ==========================================
-        // ÖZ WEB APP URL-NİZİ BURAYA YAZIN - BOŞLUQ OLMASIN!
-        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbx6J87TDaaCNnenwhZhjE1En1g4aEd-sukP_c75QJ3VqRgEhi0ar0HlIipc3bBpko6u/exec';
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyng49YLV9KiTAOWkYoqUa60ZyDzg62ex1J9vUNPjIogLb8Krp1g4TwpyI3eGO1q77c/exec';
         
         const TICKET_TYPES = [
-            { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
-            { id: 'lunch', name: 'Günorta Yeməyi', icon: '🌞', time: '12:00-15:00', code: 'G' },
-            { id: 'dinner', name: 'Axşam Yeməyi', icon: '🌙', time: '18:00-21:00', code: 'A' },
+            { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00 - 10:00', code: 'S' },
+            { id: 'lunch', name: 'Günorta Yeməyi', icon: '🌞', time: '12:00 - 15:00', code: 'G' },
+            { id: 'dinner', name: 'Axşam Yeməyi', icon: '🌙', time: '18:00 - 21:00', code: 'A' },
             { id: 'dry', name: 'Quru Talon', icon: '📦', time: 'Hər zaman', code: 'Q' }
         ];
 
         let currentEmployee = null;
-        let currentModalType = null;
         let ticketsData = {};
-        let refreshInterval = null;
+        let selectedTicket = null; // Seçilmiş talon
+        let usedTicket = null; // İstifadə edilmiş talon
 
         // ==========================================
-        // LOGIN - ID və Parol ilə
+        // LOGIN
         // ==========================================
         async function handleLogin(e) {
             e.preventDefault();
             const empId = document.getElementById('employeeId').value.trim();
             const empPass = document.getElementById('employeePass').value.trim();
-            const errorMsg = document.getElementById('errorMsg');
             const loginBtn = document.getElementById('loginBtn');
             
             if (!empId || !empPass) {
@@ -488,26 +515,12 @@
             loginBtn.innerHTML = 'Yoxlanılır... <span class="loading"></span>';
 
             try {
-                // URL sonunda boşluq olmaması üçün trim() etdik
-                const baseUrl = SHEET_API_URL.trim();
-                const url = `${baseUrl}?action=login&id=${encodeURIComponent(empId)}&pass=${encodeURIComponent(empPass)}`;
-                
-                console.log('Sorğu URL:', url);
-                
-                const data = await fetchJSONP(url);
-                
-                console.log('Server cavabı:', data);
-                
-                // Ətraflı yoxlama
-                if (!data) {
-                    showError('❌ Serverdən cavab gəlmədi!');
-                    return;
-                }
+                const data = await fetchJSONP(`${SHEET_API_URL}?action=login&id=${encodeURIComponent(empId)}&pass=${encodeURIComponent(empPass)}`);
                 
                 if (data.status === 'success' && data.employee) {
                     currentEmployee = {
                         id: empId,
-                        fullName: data.employee.fullName || data.employee.name || 'İşçi ' + empId,
+                        fullName: data.employee.fullName,
                         fatherName: data.employee.fatherName || ''
                     };
                     
@@ -518,77 +531,45 @@
                 } else if (data.status === 'invalid_pass') {
                     showError('❌ Yanlış parol!');
                 } else if (data.status === 'not_found') {
-                    showError('❌ İşçi tapılmadı! ID-ni yoxlayın.');
-                } else if (data.status === 'error') {
-                    showError('❌ Server xətası: ' + (data.message || 'Naməlum xəta'));
+                    showError('❌ İşçi tapılmadı!');
                 } else {
-                    // Debug üçün tam cavabı göstər
-                    console.error('Gözlənilməz cavab:', data);
-                    showError('❌ Naməlum cavab formatı. Konsolu yoxlayın.');
+                    showError('❌ Xəta: ' + (data.message || 'Naməlum'));
                 }
-                
             } catch (error) {
-                console.error('Xəta detalları:', error);
-                showError('❌ Bağlantı xətası! İnternet yoxlayın. Detal: ' + error.message);
+                showError('❌ Bağlantı xətası!');
+                console.error(error);
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.innerHTML = 'Daxil Ol';
             }
         }
 
-        // JSONP fetch funksiyası - TƏKMİLLƏŞDİRİLMİŞ
         function fetchJSONP(url) {
             return new Promise((resolve, reject) => {
-                const callbackName = 'jsonp_callback_' + Math.random().toString(36).substr(2, 9);
-                const scriptId = 'jsonp_script_' + Date.now();
+                const cb = 'cb_' + Date.now();
+                const script = document.createElement('script');
                 
-                // Timeout - 15 saniyə
-                const timeout = setTimeout(() => {
-                    cleanup();
-                    reject(new Error('Timeout - Server cavab vermədi'));
-                }, 15000);
-                
-                // Callback funksiyası
-                window[callbackName] = function(data) {
-                    clearTimeout(timeout);
-                    cleanup();
+                window[cb] = (data) => {
+                    delete window[cb];
+                    script.remove();
                     resolve(data);
                 };
                 
-                // Xəta halında
-                window[callbackName + '_error'] = function(e) {
-                    clearTimeout(timeout);
-                    cleanup();
-                    reject(new Error('JSONP xətası'));
-                };
+                setTimeout(() => {
+                    delete window[cb];
+                    script.remove();
+                    reject(new Error('Timeout'));
+                }, 10000);
                 
-                // Təmizlik
-                function cleanup() {
-                    delete window[callbackName];
-                    delete window[callbackName + '_error'];
-                    const script = document.getElementById(scriptId);
-                    if (script) script.remove();
-                }
-                
-                // Script tag yarad
-                const script = document.createElement('script');
-                script.id = scriptId;
-                script.src = `${url}&callback=${callbackName}`;
-                
-                script.onerror = () => {
-                    clearTimeout(timeout);
-                    cleanup();
-                    reject(new Error('Script yüklənmədi - URL yoxlayın'));
-                };
-                
+                script.src = url + '&callback=' + cb;
                 document.head.appendChild(script);
             });
         }
 
-        function showError(message) {
-            const errorMsg = document.getElementById('errorMsg');
-            errorMsg.textContent = message;
-            errorMsg.style.display = 'block';
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
         }
 
         function hideError() {
@@ -599,72 +580,133 @@
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
             
-            const fullName = currentEmployee.fullName;
-            const fatherName = currentEmployee.fatherName ? ` ${currentEmployee.fatherName} oğlu` : '';
-            document.getElementById('displayName').textContent = fullName + fatherName;
+            document.getElementById('displayName').textContent = currentEmployee.fullName;
             document.getElementById('displayId').textContent = currentEmployee.id;
             
-            startAutoRefresh();
+            loadTickets();
         }
 
         function logout() {
-            const empId = currentEmployee ? currentEmployee.id : null;
-            
-            currentEmployee = null;
-            ticketsData = {};
-            if (refreshInterval) clearInterval(refreshInterval);
-            
             localStorage.removeItem('ghg_employee');
             localStorage.removeItem('ghg_login_date');
-            if (empId) {
-                localStorage.removeItem(`tickets_${empId}`);
-                localStorage.removeItem(`lastRefresh_${empId}`);
-                localStorage.removeItem(`ticketDate_${empId}`);
-            }
+            localStorage.removeItem(`tickets_${currentEmployee?.id}`);
+            localStorage.removeItem(`usedTicket_${currentEmployee?.id}`);
             
-            document.getElementById('mainApp').style.display = 'none';
-            document.getElementById('loginPage').style.display = 'flex';
-            document.getElementById('loginForm').reset();
-            hideError();
+            location.reload();
         }
 
         // ==========================================
-        // QR SİSTEMİ
+        // TALON SİSTEMİ - SEÇMƏ VƏ İSTİFADƏ
         // ==========================================
-        function checkDailyRefresh() {
-            if (!currentEmployee) return;
-            
+        function loadTickets() {
             const today = new Date().toDateString();
-            const lastRefresh = localStorage.getItem(`lastRefresh_${currentEmployee.id}`);
             const savedDate = localStorage.getItem(`ticketDate_${currentEmployee.id}`);
+            const savedUsed = localStorage.getItem(`usedTicket_${currentEmployee.id}`);
             
-            if (savedDate !== today || !lastRefresh) {
-                refreshAllTickets();
-                localStorage.setItem(`lastRefresh_${currentEmployee.id}`, new Date().toISOString());
+            // Yeni gündürsə, təmizlə
+            if (savedDate !== today) {
+                usedTicket = null;
+                selectedTicket = null;
                 localStorage.setItem(`ticketDate_${currentEmployee.id}`, today);
-            } else {
-                loadTodayData();
+                localStorage.removeItem(`usedTicket_${currentEmployee.id}`);
+            } else if (savedUsed) {
+                usedTicket = savedUsed;
             }
-            updateRefreshDisplay();
+            
+            generateTickets();
         }
 
-        function refreshAllTickets() {
-            const today = new Date();
-            const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+        function generateTickets() {
+            const container = document.getElementById('ticketContainer');
+            container.innerHTML = '';
             
             TICKET_TYPES.forEach(type => {
-                const uniqueSeed = currentEmployee.id + dateStr + type.code;
-                const randomSuffix = generateHash(uniqueSeed);
+                const isUsed = usedTicket === type.id;
+                const isDisabled = usedTicket && usedTicket !== type.id;
+                const isSelected = selectedTicket === type.id && !usedTicket;
                 
-                ticketsData[type.id] = {
-                    used: false,
-                    usedTime: null,
-                    qrCode: `GHG|${currentEmployee.id}|${type.code}|${dateStr}|${randomSuffix}|${type.id}`
-                };
+                const card = document.createElement('div');
+                card.className = `ticket-card ${isUsed ? 'used' : ''} ${isDisabled ? 'disabled' : ''} ${isSelected ? 'selected' : ''}`;
+                
+                if (!isUsed && !isDisabled) {
+                    card.onclick = () => selectTicket(type);
+                }
+                
+                let statusHtml = '';
+                if (isUsed) {
+                    statusHtml = '<span class="ticket-status status-used">İSTİFADƏ EDİLDİ</span>';
+                } else if (isDisabled) {
+                    statusHtml = '<span class="ticket-status status-disabled">DEAKTIV</span>';
+                } else if (isSelected) {
+                    statusHtml = '<span class="ticket-status status-active">SEÇİLDİ ✓</span>';
+                } else {
+                    statusHtml = '<span class="ticket-status status-active">AKTIV</span>';
+                }
+                
+                card.innerHTML = `
+                    <div class="ticket-icon">${type.icon}</div>
+                    <div class="ticket-name">${type.name}</div>
+                    <div class="ticket-time">${type.time}</div>
+                    ${statusHtml}
+                `;
+                
+                container.appendChild(card);
             });
+        }
 
-            saveData();
-            generateCards();
+        function selectTicket(type) {
+            // Əgər artıq istifadə edilibsə, heç nə etmə
+            if (usedTicket) return;
+            
+            selectedTicket = type.id;
+            generateTickets();
+            
+            // QR kod göstər
+            showQR(type);
+        }
+
+        function showQR(type) {
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+            const uniqueSeed = currentEmployee.id + dateStr + type.code;
+            const hash = generateHash(uniqueSeed);
+            
+            const qrData = `GHG|${currentEmployee.id}|${type.code}|${dateStr}|${hash}|${type.id}`;
+            
+            // Modal məlumatlarını doldur
+            document.getElementById('qrEmpName').textContent = currentEmployee.fullName;
+            document.getElementById('qrEmpId').textContent = currentEmployee.id;
+            document.getElementById('qrTicketType').textContent = type.name;
+            
+            // QR kod yarat
+            const qrDiv = document.getElementById('modalQR');
+            qrDiv.innerHTML = '';
+            
+            new QRCode(qrDiv, {
+                text: qrData,
+                width: 220,
+                height: 220,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            document.getElementById('qrModal').style.display = 'flex';
+            
+            // İstifadə edilmiş kimi işarələ (simulyasiya)
+            // Realda skanerdən təsdiq gələndə edilməlidir
+            // Burada istifadəçi QR göstərəndə hesab edirik ki, istifadə edildi
+            markAsUsed(type.id);
+        }
+
+        function markAsUsed(ticketId) {
+            usedTicket = ticketId;
+            localStorage.setItem(`usedTicket_${currentEmployee.id}`, ticketId);
+            
+            // Kartları yenilə (deaktiv olsunlar)
+            setTimeout(() => {
+                generateTickets();
+            }, 500);
         }
 
         function generateHash(str) {
@@ -677,120 +719,9 @@
             return Math.abs(hash % 9000 + 1000);
         }
 
-        function loadTodayData() {
-            const saved = localStorage.getItem(`tickets_${currentEmployee.id}`);
-            const savedDate = localStorage.getItem(`ticketDate_${currentEmployee.id}`);
-            const today = new Date().toDateString();
-            
-            if (saved && savedDate === today) {
-                ticketsData = JSON.parse(saved);
-                generateCards();
-            } else {
-                refreshAllTickets();
-            }
-        }
-
-        function saveData() {
-            localStorage.setItem(`tickets_${currentEmployee.id}`, JSON.stringify(ticketsData));
-        }
-
-        function updateRefreshDisplay() {
-            const lastRefresh = localStorage.getItem(`lastRefresh_${currentEmployee.id}`);
-            if (lastRefresh) {
-                const date = new Date(lastRefresh);
-                document.getElementById('lastRefresh').textContent = 
-                    date.toLocaleDateString('az-AZ') + ' ' + date.toLocaleTimeString('az-AZ');
-            } else {
-                document.getElementById('lastRefresh').textContent = 'Bugün';
-            }
-        }
-
-        function startAutoRefresh() {
-            checkDailyRefresh();
-            refreshInterval = setInterval(checkDailyRefresh, 60000);
-        }
-
-        // ==========================================
-        // KARTLAR
-        // ==========================================
-        function generateCards() {
-            const container = document.getElementById('qrContainer');
-            container.innerHTML = '';
-            const usedTicket = Object.keys(ticketsData).find(key => ticketsData[key].used);
-
-            TICKET_TYPES.forEach(type => {
-                const ticket = ticketsData[type.id];
-                const isUsed = ticket.used;
-                const isDisabled = usedTicket && usedTicket !== type.id;
-
-                const card = document.createElement('div');
-                card.className = `qr-card ${isUsed ? 'used' : ''} ${isDisabled ? 'disabled' : ''}`;
-                
-                if (!isUsed && !isDisabled) {
-                    card.onclick = () => openModal(type);
-                }
-
-                let statusHtml = '';
-                if (isUsed) {
-                    statusHtml = `<span class="qr-status status-used">İSTİFADƏ EDİLDİ</span><div class="used-info">${ticket.usedTime}</div>`;
-                } else if (isDisabled) {
-                    statusHtml = `<span class="qr-status status-disabled">DEAKTIV</span>`;
-                } else {
-                    statusHtml = `<span class="qr-status status-active">AKTIV</span>`;
-                }
-
-                card.innerHTML = `
-                    <h3>${type.name}</h3>
-                    <p class="qr-time">${type.time}</p>
-                    <div class="qr-icon">${type.icon}</div>
-                    ${statusHtml}
-                `;
-                
-                container.appendChild(card);
-            });
-        }
-
-        // ==========================================
-        // QR MODAL
-        // ==========================================
-        function openModal(type) {
-            if (typeof QRCode === 'undefined') {
-                alert('Xəta: QR kod kitabxanası yüklənmədi!');
-                return;
-            }
-            
-            if (!ticketsData[type.id] || ticketsData[type.id].used) return;
-            
-            currentModalType = type;
-            const qrData = ticketsData[type.id].qrCode;
-            
-            document.getElementById('modalTitle').textContent = `${type.icon} ${type.name}`;
-            document.getElementById('modalTime').textContent = `⏰ ${type.time}`;
-            document.getElementById('qrDataText').textContent = qrData;
-            
-            const qrDiv = document.getElementById('modalQR');
-            qrDiv.innerHTML = '';
-            
-            try {
-                new QRCode(qrDiv, {
-                    text: qrData,
-                    width: 230,
-                    height: 230,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-            } catch (e) {
-                qrDiv.innerHTML = '<div style="color:red; padding:20px;">❌ QR Kod Xətası</div>';
-            }
-            
-            document.getElementById('qrModal').style.display = 'flex';
-        }
-
         function closeModal(e) {
             if (!e || e.target.id === 'qrModal' || e.target.className === 'qr-modal-close') {
                 document.getElementById('qrModal').style.display = 'none';
-                currentModalType = null;
             }
         }
 
@@ -798,15 +729,13 @@
         // BAŞLANĞIC
         // ==========================================
         window.onload = function() {
-            const savedEmployee = localStorage.getItem('ghg_employee');
-            
-            if (savedEmployee) {
+            const saved = localStorage.getItem('ghg_employee');
+            if (saved) {
                 try {
-                    currentEmployee = JSON.parse(savedEmployee);
+                    currentEmployee = JSON.parse(saved);
                     document.getElementById('employeeId').value = currentEmployee.id;
                     enterApp();
                 } catch (e) {
-                    console.error('LocalStorage xətası:', e);
                     localStorage.removeItem('ghg_employee');
                 }
             }
@@ -814,4 +743,3 @@
     </script>
 </body>
 </html>
-
