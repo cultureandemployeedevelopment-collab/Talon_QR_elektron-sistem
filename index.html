@@ -453,8 +453,8 @@
         // ==========================================
         // KONFİQURASİYA
         // ==========================================
-        // ÖZ WEB APP URL-NİZİ BURAYA YAZIN (SONDA BOŞLUQ OLMASIN!)
-        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzpD3ZokN-snLbTPr3GuvLLPAWV1Kh9jfywZg96WZN6VPnnINM5rbO51sLU5D2PjU3I/exec';
+        // ÖZ WEB APP URL-NİZİ BURAYA YAZIN - BOŞLUQ OLMASIN!
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxTkq83EfU118VregJxZU0AREaIyI2nmDZHfCA4RM2cgo_FNCGDgP-f9jCDIpcv87Z6/exec';
         
         const TICKET_TYPES = [
             { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
@@ -488,20 +488,29 @@
             loginBtn.innerHTML = 'Yoxlanılır... <span class="loading"></span>';
 
             try {
-                // JSONP ilə sorğu - ID və parol göndərilir
-                const data = await fetchJSONP(`${SHEET_API_URL}?action=login&id=${encodeURIComponent(empId)}&pass=${encodeURIComponent(empPass)}`);
+                // URL sonunda boşluq olmaması üçün trim() etdik
+                const baseUrl = SHEET_API_URL.trim();
+                const url = `${baseUrl}?action=login&id=${encodeURIComponent(empId)}&pass=${encodeURIComponent(empPass)}`;
+                
+                console.log('Sorğu URL:', url);
+                
+                const data = await fetchJSONP(url);
                 
                 console.log('Server cavabı:', data);
                 
+                // Ətraflı yoxlama
+                if (!data) {
+                    showError('❌ Serverdən cavab gəlmədi!');
+                    return;
+                }
+                
                 if (data.status === 'success' && data.employee) {
-                    // Uğurlu giriş - Sheet-dən gələn məlumatlar
                     currentEmployee = {
                         id: empId,
                         fullName: data.employee.fullName || data.employee.name || 'İşçi ' + empId,
                         fatherName: data.employee.fatherName || ''
                     };
                     
-                    // LocalStorage-da yadda saxla (bir dəfə giriş üçün)
                     localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
                     localStorage.setItem('ghg_login_date', new Date().toDateString());
                     
@@ -510,30 +519,34 @@
                     showError('❌ Yanlış parol!');
                 } else if (data.status === 'not_found') {
                     showError('❌ İşçi tapılmadı! ID-ni yoxlayın.');
+                } else if (data.status === 'error') {
+                    showError('❌ Server xətası: ' + (data.message || 'Naməlum xəta'));
                 } else {
-                    showError('❌ Naməlum xəta baş verdi.');
+                    // Debug üçün tam cavabı göstər
+                    console.error('Gözlənilməz cavab:', data);
+                    showError('❌ Naməlum cavab formatı. Konsolu yoxlayın.');
                 }
                 
             } catch (error) {
-                console.error('Xəta:', error);
-                showError('❌ Bağlantı xətası! İnternet yoxlayın və ya daha sonra cəhd edin.');
+                console.error('Xəta detalları:', error);
+                showError('❌ Bağlantı xətası! İnternet yoxlayın. Detal: ' + error.message);
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.innerHTML = 'Daxil Ol';
             }
         }
 
-        // JSONP fetch funksiyası
+        // JSONP fetch funksiyası - TƏKMİLLƏŞDİRİLMİŞ
         function fetchJSONP(url) {
             return new Promise((resolve, reject) => {
-                const callbackName = 'jsonp_callback_' + Date.now();
+                const callbackName = 'jsonp_callback_' + Math.random().toString(36).substr(2, 9);
                 const scriptId = 'jsonp_script_' + Date.now();
                 
-                // Timeout - 10 saniyə
+                // Timeout - 15 saniyə
                 const timeout = setTimeout(() => {
                     cleanup();
-                    reject(new Error('Timeout'));
-                }, 10000);
+                    reject(new Error('Timeout - Server cavab vermədi'));
+                }, 15000);
                 
                 // Callback funksiyası
                 window[callbackName] = function(data) {
@@ -542,9 +555,17 @@
                     resolve(data);
                 };
                 
+                // Xəta halında
+                window[callbackName + '_error'] = function(e) {
+                    clearTimeout(timeout);
+                    cleanup();
+                    reject(new Error('JSONP xətası'));
+                };
+                
                 // Təmizlik
                 function cleanup() {
                     delete window[callbackName];
+                    delete window[callbackName + '_error'];
                     const script = document.getElementById(scriptId);
                     if (script) script.remove();
                 }
@@ -557,7 +578,7 @@
                 script.onerror = () => {
                     clearTimeout(timeout);
                     cleanup();
-                    reject(new Error('Script load error'));
+                    reject(new Error('Script yüklənmədi - URL yoxlayın'));
                 };
                 
                 document.head.appendChild(script);
@@ -578,7 +599,6 @@
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
             
-            // Ad Soyad Ata adı göstər
             const fullName = currentEmployee.fullName;
             const fatherName = currentEmployee.fatherName ? ` ${currentEmployee.fatherName} oğlu` : '';
             document.getElementById('displayName').textContent = fullName + fatherName;
@@ -588,14 +608,12 @@
         }
 
         function logout() {
-            // Əvvəl ID-ni saxla ki, localStorage təmizləyəndən sonra istifadə edə bilək
             const empId = currentEmployee ? currentEmployee.id : null;
             
             currentEmployee = null;
             ticketsData = {};
             if (refreshInterval) clearInterval(refreshInterval);
             
-            // LocalStorage təmizlə
             localStorage.removeItem('ghg_employee');
             localStorage.removeItem('ghg_login_date');
             if (empId) {
@@ -611,7 +629,7 @@
         }
 
         // ==========================================
-        // QR SİSTEMİ - Hər gün avtomatik yenilənmə
+        // QR SİSTEMİ
         // ==========================================
         function checkDailyRefresh() {
             if (!currentEmployee) return;
@@ -620,7 +638,6 @@
             const lastRefresh = localStorage.getItem(`lastRefresh_${currentEmployee.id}`);
             const savedDate = localStorage.getItem(`ticketDate_${currentEmployee.id}`);
             
-            // Yeni gündürsə və ya ilk dəfədirsə yenilə
             if (savedDate !== today || !lastRefresh) {
                 refreshAllTickets();
                 localStorage.setItem(`lastRefresh_${currentEmployee.id}`, new Date().toISOString());
@@ -636,12 +653,9 @@
             const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
             
             TICKET_TYPES.forEach(type => {
-                // Hər kəs üçün fərqli random (amma sabit qalmalı hər gün üçün)
                 const uniqueSeed = currentEmployee.id + dateStr + type.code;
                 const randomSuffix = generateHash(uniqueSeed);
                 
-                // Hər gün yeni QR kod yaradılır
-                // Format: GHG|ID|TYPE|DATE|UNIQUE_HASH|TYPE_ID
                 ticketsData[type.id] = {
                     used: false,
                     usedTime: null,
@@ -653,7 +667,6 @@
             generateCards();
         }
 
-        // Sadə hash funksiyası - hər işçi üçün unikal kod yaradır
         function generateHash(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) {
@@ -661,7 +674,6 @@
                 hash = ((hash << 5) - hash) + char;
                 hash = hash & hash;
             }
-            // Pozitiv 4 rəqəmli ədəd et
             return Math.abs(hash % 9000 + 1000);
         }
 
@@ -674,7 +686,6 @@
                 ticketsData = JSON.parse(saved);
                 generateCards();
             } else {
-                // Köhnə məlumatları sil, yenilə
                 refreshAllTickets();
             }
         }
@@ -696,7 +707,6 @@
 
         function startAutoRefresh() {
             checkDailyRefresh();
-            // Hər dəqiqə yoxla (gün dəyişibsə yenilə)
             refreshInterval = setInterval(checkDailyRefresh, 60000);
         }
 
@@ -745,7 +755,7 @@
         // ==========================================
         function openModal(type) {
             if (typeof QRCode === 'undefined') {
-                alert('Xəta: QR kod kitabxanası yüklənmədi! Səhifəni yeniləyin.');
+                alert('Xəta: QR kod kitabxanası yüklənmədi!');
                 return;
             }
             
@@ -785,23 +795,18 @@
         }
 
         // ==========================================
-        // BAŞLANĞIC - Bir dəfə giriş yoxlaması
+        // BAŞLANĞIC
         // ==========================================
         window.onload = function() {
-            // LocalStorage-da əvvəlki giriş varmı yoxla
             const savedEmployee = localStorage.getItem('ghg_employee');
-            const loginDate = localStorage.getItem('ghg_login_date');
             
             if (savedEmployee) {
                 try {
                     currentEmployee = JSON.parse(savedEmployee);
-                    
-                    // Əgər bu gün login olunubsa və ya ümumiyyətlə login qalıbsa
-                    // İstifadəçi çıxış etməyibsə avtomatik daxil ol
                     document.getElementById('employeeId').value = currentEmployee.id;
                     enterApp();
                 } catch (e) {
-                    console.error('LocalStorage oxuma xətası:', e);
+                    console.error('LocalStorage xətası:', e);
                     localStorage.removeItem('ghg_employee');
                 }
             }
@@ -809,4 +814,3 @@
     </script>
 </body>
 </html>
-
