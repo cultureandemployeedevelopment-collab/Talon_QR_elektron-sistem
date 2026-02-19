@@ -454,7 +454,7 @@
         // KONFİQURASİYA
         // ==========================================
         // ÖZ WEB APP URL-NİZİ BURAYA YAZIN (SONDA BOŞLUQ OLMASIN!)
-        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbySlVGjwLgqLoEFL8XXKu-o1lXiPwo7Bmg76mUkIqTU9glqCMSLyI0xuhw0TuOsPa10/exec';
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzpD3ZokN-snLbTPr3GuvLLPAWV1Kh9jfywZg96WZN6VPnnINM5rbO51sLU5D2PjU3I/exec';
         
         const TICKET_TYPES = [
             { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
@@ -588,6 +588,9 @@
         }
 
         function logout() {
+            // Əvvəl ID-ni saxla ki, localStorage təmizləyəndən sonra istifadə edə bilək
+            const empId = currentEmployee ? currentEmployee.id : null;
+            
             currentEmployee = null;
             ticketsData = {};
             if (refreshInterval) clearInterval(refreshInterval);
@@ -595,8 +598,11 @@
             // LocalStorage təmizlə
             localStorage.removeItem('ghg_employee');
             localStorage.removeItem('ghg_login_date');
-            localStorage.removeItem(`tickets_${currentEmployee?.id}`);
-            localStorage.removeItem(`lastRefresh_${currentEmployee?.id}`);
+            if (empId) {
+                localStorage.removeItem(`tickets_${empId}`);
+                localStorage.removeItem(`lastRefresh_${empId}`);
+                localStorage.removeItem(`ticketDate_${empId}`);
+            }
             
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('loginPage').style.display = 'flex';
@@ -628,10 +634,14 @@
         function refreshAllTickets() {
             const today = new Date();
             const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
-            const randomSuffix = Math.floor(1000 + Math.random() * 9000);
             
             TICKET_TYPES.forEach(type => {
+                // Hər kəs üçün fərqli random (amma sabit qalmalı hər gün üçün)
+                const uniqueSeed = currentEmployee.id + dateStr + type.code;
+                const randomSuffix = generateHash(uniqueSeed);
+                
                 // Hər gün yeni QR kod yaradılır
+                // Format: GHG|ID|TYPE|DATE|UNIQUE_HASH|TYPE_ID
                 ticketsData[type.id] = {
                     used: false,
                     usedTime: null,
@@ -641,6 +651,18 @@
 
             saveData();
             generateCards();
+        }
+
+        // Sadə hash funksiyası - hər işçi üçün unikal kod yaradır
+        function generateHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            // Pozitiv 4 rəqəmli ədəd et
+            return Math.abs(hash % 9000 + 1000);
         }
 
         function loadTodayData() {
@@ -749,7 +771,7 @@
                     correctLevel: QRCode.CorrectLevel.H
                 });
             } catch (e) {
-                qrqrDiv.innerHTML = '<div style="color:red; padding:20px;">❌ QR Kod Xətası</div>';
+                qrDiv.innerHTML = '<div style="color:red; padding:20px;">❌ QR Kod Xətası</div>';
             }
             
             document.getElementById('qrModal').style.display = 'flex';
@@ -769,7 +791,6 @@
             // LocalStorage-da əvvəlki giriş varmı yoxla
             const savedEmployee = localStorage.getItem('ghg_employee');
             const loginDate = localStorage.getItem('ghg_login_date');
-            const today = new Date().toDateString();
             
             if (savedEmployee) {
                 try {
