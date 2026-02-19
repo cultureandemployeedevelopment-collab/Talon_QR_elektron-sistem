@@ -2,89 +2,49 @@
 <html lang="az">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GHG Yemək Talonu</title>
-    
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 10px;
         }
-
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-        }
-
         .login-container {
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 15px;
         }
-
         .login-box {
             background: white;
-            padding: 30px 25px;
+            padding: 30px;
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             width: 100%;
             max-width: 400px;
             text-align: center;
         }
-
-        .login-box h1 {
-            color: #667eea;
-            margin-bottom: 8px;
-            font-size: 1.8em;
-        }
-
-        .login-box p {
-            color: #666;
-            margin-bottom: 25px;
-            font-size: 0.95em;
-        }
-
         .form-group {
             margin-bottom: 18px;
             text-align: left;
         }
-
         .form-group label {
             display: block;
             margin-bottom: 6px;
             color: #333;
             font-weight: 600;
-            font-size: 0.9em;
         }
-
         .form-group input {
             width: 100%;
             padding: 14px;
             border: 2px solid #e0e0e0;
             border-radius: 12px;
             font-size: 16px;
-            transition: all 0.3s;
-            -webkit-appearance: none;
         }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
         .btn {
             width: 100%;
             padding: 16px;
@@ -93,65 +53,18 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
-            transition: all 0.3s;
-            -webkit-appearance: none;
-        }
-
-        .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .error-message {
-            background: #ffebee;
-            color: #c62828;
-            padding: 12px;
-            border-radius: 10px;
-            margin-top: 15px;
-            display: none;
-            font-size: 0.9em;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #ffffff;
-            border-top: 3px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 10px;
-            vertical-align: middle;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .main-app { display: none; padding-bottom: 20px; }
-        
+        .main-app { display: none; }
         .header {
             text-align: center;
             color: white;
             margin-bottom: 20px;
             padding: 10px;
         }
-
-        .header h1 { font-size: 1.6em; margin-bottom: 8px; font-weight: 700; }
-
         .user-info {
             background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
             padding: 12px 20px;
             border-radius: 25px;
             display: inline-flex;
@@ -159,10 +72,7 @@
             gap: 12px;
             margin-bottom: 15px;
             font-size: 0.9em;
-            flex-wrap: wrap;
-            justify-content: center;
         }
-
         .logout-btn {
             background: #f44336;
             color: white;
@@ -170,10 +80,13 @@
             padding: 8px 16px;
             border-radius: 20px;
             cursor: pointer;
-            font-size: 0.85em;
-            font-weight: 600;
         }
-
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
         .info-box {
             background: #fff3e0;
             border-left: 4px solid #ff9800;
@@ -182,213 +95,93 @@
             margin-bottom: 20px;
             color: #e65100;
             font-size: 0.9em;
-            line-height: 1.4;
         }
-
-        .info-box strong { display: block; margin-bottom: 5px; font-size: 1.05em; }
-
-        .section {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            margin: 0 5px;
-        }
-
-        /* YENİ: 4 Talon Grid */
         .ticket-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
             margin-top: 15px;
         }
-
         .ticket-card {
             background: #f8f9fa;
             border-radius: 16px;
-            padding: 20px 15px;
+            padding: 20px;
             text-align: center;
             border: 3px solid #e0e0e0;
-            transition: all 0.3s;
             cursor: pointer;
-            position: relative;
+            transition: all 0.3s;
         }
-
         .ticket-card:hover:not(.used):not(.disabled) {
             transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
             border-color: #667eea;
         }
-
-        .ticket-card:active:not(.used):not(.disabled) {
-            transform: scale(0.95);
-        }
-
-        /* Seçilmiş talon */
         .ticket-card.selected {
             background: #e3f2fd;
             border-color: #2196f3;
-            box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
         }
-
-        /* İstifadə edilmiş talon */
         .ticket-card.used {
             background: #ffebee;
             border-color: #ef5350;
             cursor: not-allowed;
             opacity: 0.8;
         }
-
-        .ticket-card.used::after {
-            content: '✓ İSTİFADƏ EDİLDİ';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(244, 67, 54, 0.9);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        /* Deaktiv talon (başqa seçilib) */
         .ticket-card.disabled {
             background: #eceff1;
             border-color: #b0bec5;
             cursor: not-allowed;
             opacity: 0.5;
         }
-
-        .ticket-card.disabled .ticket-icon {
-            filter: grayscale(100%);
-            opacity: 0.4;
-        }
-
-        .ticket-icon {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-
-        .ticket-name {
-            font-weight: 700;
-            color: #333;
-            font-size: 1em;
-            margin-bottom: 5px;
-        }
-
-        .ticket-time {
-            color: #666;
-            font-size: 0.8em;
-            margin-bottom: 10px;
-        }
-
+        .ticket-icon { font-size: 40px; margin-bottom: 8px; }
+        .ticket-name { font-weight: 700; color: #333; }
+        .ticket-time { color: #666; font-size: 0.8em; margin: 5px 0; }
         .ticket-status {
             display: inline-block;
-            padding: 6px 12px;
-            border-radius: 15px;
+            padding: 4px 10px;
+            border-radius: 12px;
             font-size: 0.75em;
             font-weight: bold;
         }
-
-        .status-active {
-            background: #4caf50;
-            color: white;
-        }
-
-        .status-used {
-            background: #f44336;
-            color: white;
-        }
-
-        .status-disabled {
-            background: #78909c;
-            color: white;
-        }
-
-        /* QR Modal */
+        .status-active { background: #4caf50; color: white; }
+        .status-used { background: #f44336; color: white; }
+        .status-disabled { background: #78909c; color: white; }
+        
         .qr-modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: rgba(0,0,0,0.9);
             z-index: 1000;
             justify-content: center;
             align-items: center;
             padding: 20px;
         }
-
         .qr-modal-content {
             background: white;
-            padding: 30px 20px;
+            padding: 30px;
             border-radius: 20px;
             text-align: center;
+            max-width: 400px;
             width: 100%;
-            max-width: 380px;
-            position: relative;
-            animation: zoomIn 0.3s;
         }
-
-        @keyframes zoomIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .qr-modal-close {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 32px;
-            cursor: pointer;
-            color: #666;
-        }
-
         .qr-big {
-            width: 250px;
-            height: 250px;
+            width: 250px; height: 250px;
             margin: 20px auto;
-            padding: 15px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-
-        .qr-info {
-            background: #f5f5f5;
-            padding: 15px;
-            border-radius: 12px;
-            margin: 15px 0;
-            text-align: left;
-        }
-
-        .qr-info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 0.9em;
-        }
-
-        .qr-info-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .qr-info-label {
-            color: #666;
-        }
-
-        .qr-info-value {
-            font-weight: 600;
+        .btn-close {
+            background: #e0e0e0;
             color: #333;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 15px;
         }
-
-        @media (min-width: 768px) {
-            body { padding: 20px; }
-            .ticket-grid { grid-template-columns: repeat(4, 1fr); gap: 20px; }
-            .ticket-card { padding: 25px 20px; }
+        .date-info {
+            text-align: center;
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 0.9em;
         }
     </style>
 </head>
@@ -399,50 +192,41 @@
         <div class="login-box">
             <h1>🍽️ GHG Yemək</h1>
             <p>Elektron talon sistemi</p>
-            
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group">
-                    <label for="employeeId">İşçi ID *</label>
-                    <input type="text" id="employeeId" placeholder="Məsələn: 100001" required autocomplete="off">
+                    <label>İşçi ID</label>
+                    <input type="text" id="employeeId" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="employeePass">Parol *</label>
-                    <input type="password" id="employeePass" placeholder="Şifrənizi daxil edin" required autocomplete="off">
+                    <label>Parol</label>
+                    <input type="password" id="employeePass" required>
                 </div>
-                
-                <button type="submit" class="btn btn-primary" id="loginBtn">
-                    Daxil Ol
-                </button>
+                <button type="submit" class="btn">Daxil Ol</button>
             </form>
-            
-            <div class="error-message" id="errorMsg"></div>
+            <div id="errorMsg" style="color: red; margin-top: 10px; display: none;"></div>
         </div>
     </div>
 
-    <!-- ƏSAS SƏHİFƏ -->
+    <!-- MAIN APP -->
     <div class="main-app" id="mainApp">
-        <div class="container">
-            <div class="header">
-                <div class="user-info">
-                    <span>👤 <strong id="displayName"></strong></span>
-                    <span style="opacity: 0.7;">|</span>
-                    <span>🆔 <span id="displayId"></span></span>
-                    <button class="logout-btn" onclick="logout()">Çıxış</button>
-                </div>
-                <h1>🍽️ Yemək Talonlarım</h1>
+        <div class="header">
+            <div class="user-info">
+                <span>👤 <strong id="displayName"></strong></span>
+                <span>|</span>
+                <span>🆔 <span id="displayId"></span></span>
+                <button class="logout-btn" onclick="logout()">Çıxış</button>
             </div>
+            <h1>🍽️ Yemək Talonlarım</h1>
+        </div>
 
+        <div class="container">
             <div class="section">
+                <div class="date-info" id="dateInfo"></div>
                 <div class="info-box">
-                    <strong>⚠️ Diqqət!</strong>
-                    Gündə yalnız <b>1 talon</b> istifadə edə bilərsiniz. 
-                    Seçdiyiniz talonu skan etdikdən sonra digərləri avtomatik deaktiv olacaq.
+                    <strong>⚠️ Gündə yalnız 1 talon!</strong><br>
+                    Seçdiyiniz talonu skan etdikdən sonra digərləri deaktiv olacaq.
                 </div>
-
-                <div id="ticketContainer" class="ticket-grid">
-                    <!-- Talonlar buraya əlavə olunacaq -->
-                </div>
+                <div id="ticketContainer" class="ticket-grid"></div>
             </div>
         </div>
     </div>
@@ -450,97 +234,103 @@
     <!-- QR MODAL -->
     <div class="qr-modal" id="qrModal" onclick="closeModal(event)">
         <div class="qr-modal-content" onclick="event.stopPropagation()">
-            <span class="qr-modal-close" onclick="closeModal()">&times;</span>
-            <h2 id="modalTitle">🎫 Talonunuz Hazırdır</h2>
-            
-            <div class="qr-info">
-                <div class="qr-info-row">
-                    <span class="qr-info-label">Əməkdaş:</span>
-                    <span class="qr-info-value" id="qrEmpName">-</span>
-                </div>
-                <div class="qr-info-row">
-                    <span class="qr-info-label">ID:</span>
-                    <span class="qr-info-value" id="qrEmpId">-</span>
-                </div>
-                <div class="qr-info-row">
-                    <span class="qr-info-label">Talon:</span>
-                    <span class="qr-info-value" id="qrTicketType">-</span>
-                </div>
-            </div>
-            
+            <h2>🎫 Talonunuz Hazırdır</h2>
+            <p id="qrTicketInfo" style="margin: 10px 0; color: #666;"></p>
             <div class="qr-big" id="modalQR"></div>
-            <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">
-                Bu kodu kafedəki skanerə göstərin
-            </p>
-            <button class="btn btn-primary" onclick="closeModal()" style="width: auto; padding: 12px 30px;">
-                Bağla
-            </button>
+            <p style="color: #666; font-size: 0.9em;">Bu kodu kafedəki skanerə göstərin</p>
+            <button class="btn-close" onclick="closeModal()">Bağla</button>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // KONFİQURASİYA
-        // ==========================================
-        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyng49YLV9KiTAOWkYoqUa60ZyDzg62ex1J9vUNPjIogLb8Krp1g4TwpyI3eGO1q77c/exec';
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwKRngR92XRKIJoTOWGlW-aHQW2AxkkfsG8Q-IFDEgBSRPRK8-0sREW6uadc68yI3bM/exec';
         
         const TICKET_TYPES = [
-            { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00 - 10:00', code: 'S' },
-            { id: 'lunch', name: 'Günorta Yeməyi', icon: '🌞', time: '12:00 - 15:00', code: 'G' },
-            { id: 'dinner', name: 'Axşam Yeməyi', icon: '🌙', time: '18:00 - 21:00', code: 'A' },
+            { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
+            { id: 'lunch', name: 'Günorta Yeməyi', icon: '🌞', time: '12:00-15:00', code: 'G' },
+            { id: 'dinner', name: 'Axşam Yeməyi', icon: '🌙', time: '18:00-21:00', code: 'A' },
             { id: 'dry', name: 'Quru Talon', icon: '📦', time: 'Hər zaman', code: 'Q' }
         ];
 
         let currentEmployee = null;
-        let ticketsData = {};
-        let selectedTicket = null; // Seçilmiş talon
-        let usedTicket = null; // İstifadə edilmiş talon
+        let todayStr = '';
+        let usedTicket = null;
+
+        // ==========================================
+        // HƏR GÜN YENİ QR YARADAN FUNKSIYA
+        // ==========================================
+        function getTodayString() {
+            const today = new Date();
+            return today.getFullYear() + 
+                   String(today.getMonth() + 1).padStart(2, '0') + 
+                   String(today.getDate()).padStart(2, '0');
+        }
+
+        function generateDailyQR(type) {
+            const dateStr = getTodayString();
+            const uniqueString = currentEmployee.id + '_' + dateStr + '_' + type.code;
+            
+            // Sadə hash funksiyası
+            let hash = 0;
+            for (let i = 0; i < uniqueString.length; i++) {
+                const char = uniqueString.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            const hashCode = Math.abs(hash % 9000 + 1000);
+            
+            // Format: GHG|ID|TYPE|DATE|HASH|TYPE_ID
+            return `GHG|${currentEmployee.id}|${type.code}|${dateStr}|${hashCode}|${type.id}`;
+        }
 
         // ==========================================
         // LOGIN
         // ==========================================
         async function handleLogin(e) {
             e.preventDefault();
-            const empId = document.getElementById('employeeId').value.trim();
-            const empPass = document.getElementById('employeePass').value.trim();
-            const loginBtn = document.getElementById('loginBtn');
+            const id = document.getElementById('employeeId').value.trim();
+            const pass = document.getElementById('employeePass').value.trim();
             
-            if (!empId || !empPass) {
-                showError('❌ ID və parol daxil edin!');
-                return;
-            }
-
-            hideError();
-            loginBtn.disabled = true;
-            loginBtn.innerHTML = 'Yoxlanılır... <span class="loading"></span>';
-
             try {
-                const data = await fetchJSONP(`${SHEET_API_URL}?action=login&id=${encodeURIComponent(empId)}&pass=${encodeURIComponent(empPass)}`);
+                const data = await fetchJSONP(`${SHEET_API_URL}?action=login&id=${id}&pass=${pass}`);
                 
-                if (data.status === 'success' && data.employee) {
+                if (data.status === 'success') {
                     currentEmployee = {
-                        id: empId,
-                        fullName: data.employee.fullName,
-                        fatherName: data.employee.fatherName || ''
+                        id: id,
+                        fullName: data.employee.fullName
                     };
                     
-                    localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
-                    localStorage.setItem('ghg_login_date', new Date().toDateString());
+                    // Bugünkü tarixi yoxla
+                    todayStr = getTodayString();
+                    const savedDate = localStorage.getItem(`ghg_date_${id}`);
                     
-                    enterApp();
-                } else if (data.status === 'invalid_pass') {
-                    showError('❌ Yanlış parol!');
-                } else if (data.status === 'not_found') {
-                    showError('❌ İşçi tapılmadı!');
+                    // Yeni gündürsə, təmizlə
+                    if (savedDate !== todayStr) {
+                        localStorage.setItem(`ghg_date_${id}`, todayStr);
+                        localStorage.removeItem(`ghg_used_${id}`);
+                        usedTicket = null;
+                    } else {
+                        usedTicket = localStorage.getItem(`ghg_used_${id}`);
+                    }
+                    
+                    localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
+                    
+                    document.getElementById('loginPage').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'block';
+                    document.getElementById('displayName').textContent = currentEmployee.fullName;
+                    document.getElementById('displayId').textContent = id;
+                    
+                    // Tarixi göstər
+                    const today = new Date();
+                    document.getElementById('dateInfo').textContent = 
+                        '📅 ' + today.toLocaleDateString('az-AZ') + ' | Hər gün yeni kodlar';
+                    
+                    renderTickets();
                 } else {
-                    showError('❌ Xəta: ' + (data.message || 'Naməlum'));
+                    showError('ID və ya parol yanlışdır!');
                 }
-            } catch (error) {
-                showError('❌ Bağlantı xətası!');
-                console.error(error);
-            } finally {
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = 'Daxil Ol';
+            } catch (err) {
+                showError('Bağlantı xətası!');
             }
         }
 
@@ -548,19 +338,12 @@
             return new Promise((resolve, reject) => {
                 const cb = 'cb_' + Date.now();
                 const script = document.createElement('script');
-                
                 window[cb] = (data) => {
                     delete window[cb];
                     script.remove();
                     resolve(data);
                 };
-                
-                setTimeout(() => {
-                    delete window[cb];
-                    script.remove();
-                    reject(new Error('Timeout'));
-                }, 10000);
-                
+                setTimeout(() => reject('timeout'), 10000);
                 script.src = url + '&callback=' + cb;
                 document.head.appendChild(script);
             });
@@ -572,113 +355,47 @@
             el.style.display = 'block';
         }
 
-        function hideError() {
-            document.getElementById('errorMsg').style.display = 'none';
-        }
-
-        function enterApp() {
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
-            
-            document.getElementById('displayName').textContent = currentEmployee.fullName;
-            document.getElementById('displayId').textContent = currentEmployee.id;
-            
-            loadTickets();
-        }
-
-        function logout() {
-            localStorage.removeItem('ghg_employee');
-            localStorage.removeItem('ghg_login_date');
-            localStorage.removeItem(`tickets_${currentEmployee?.id}`);
-            localStorage.removeItem(`usedTicket_${currentEmployee?.id}`);
-            
-            location.reload();
-        }
-
         // ==========================================
-        // TALON SİSTEMİ - SEÇMƏ VƏ İSTİFADƏ
+        // TALONLARI GÖSTƏR (HƏR GÜN YENİ)
         // ==========================================
-        function loadTickets() {
-            const today = new Date().toDateString();
-            const savedDate = localStorage.getItem(`ticketDate_${currentEmployee.id}`);
-            const savedUsed = localStorage.getItem(`usedTicket_${currentEmployee.id}`);
-            
-            // Yeni gündürsə, təmizlə
-            if (savedDate !== today) {
-                usedTicket = null;
-                selectedTicket = null;
-                localStorage.setItem(`ticketDate_${currentEmployee.id}`, today);
-                localStorage.removeItem(`usedTicket_${currentEmployee.id}`);
-            } else if (savedUsed) {
-                usedTicket = savedUsed;
-            }
-            
-            generateTickets();
-        }
-
-        function generateTickets() {
+        function renderTickets() {
             const container = document.getElementById('ticketContainer');
             container.innerHTML = '';
             
             TICKET_TYPES.forEach(type => {
                 const isUsed = usedTicket === type.id;
                 const isDisabled = usedTicket && usedTicket !== type.id;
-                const isSelected = selectedTicket === type.id && !usedTicket;
                 
                 const card = document.createElement('div');
-                card.className = `ticket-card ${isUsed ? 'used' : ''} ${isDisabled ? 'disabled' : ''} ${isSelected ? 'selected' : ''}`;
+                card.className = `ticket-card ${isUsed ? 'used' : ''} ${isDisabled ? 'disabled' : ''}`;
                 
                 if (!isUsed && !isDisabled) {
-                    card.onclick = () => selectTicket(type);
+                    card.onclick = () => showTicket(type);
                 }
                 
-                let statusHtml = '';
-                if (isUsed) {
-                    statusHtml = '<span class="ticket-status status-used">İSTİFADƏ EDİLDİ</span>';
-                } else if (isDisabled) {
-                    statusHtml = '<span class="ticket-status status-disabled">DEAKTIV</span>';
-                } else if (isSelected) {
-                    statusHtml = '<span class="ticket-status status-active">SEÇİLDİ ✓</span>';
-                } else {
-                    statusHtml = '<span class="ticket-status status-active">AKTIV</span>';
-                }
+                let statusText = '';
+                if (isUsed) statusText = '<span class="ticket-status status-used">İSTİFADƏ EDİLDİ</span>';
+                else if (isDisabled) statusText = '<span class="ticket-status status-disabled">DEAKTIV</span>';
+                else statusText = '<span class="ticket-status status-active">AKTIV</span>';
                 
                 card.innerHTML = `
                     <div class="ticket-icon">${type.icon}</div>
                     <div class="ticket-name">${type.name}</div>
                     <div class="ticket-time">${type.time}</div>
-                    ${statusHtml}
+                    ${statusText}
                 `;
                 
                 container.appendChild(card);
             });
         }
 
-        function selectTicket(type) {
-            // Əgər artıq istifadə edilibsə, heç nə etmə
-            if (usedTicket) return;
+        function showTicket(type) {
+            // Hər gün yeni QR kod yarat
+            const qrData = generateDailyQR(type);
             
-            selectedTicket = type.id;
-            generateTickets();
+            document.getElementById('qrTicketInfo').textContent = 
+                `${currentEmployee.fullName} | ${type.name}`;
             
-            // QR kod göstər
-            showQR(type);
-        }
-
-        function showQR(type) {
-            const today = new Date();
-            const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
-            const uniqueSeed = currentEmployee.id + dateStr + type.code;
-            const hash = generateHash(uniqueSeed);
-            
-            const qrData = `GHG|${currentEmployee.id}|${type.code}|${dateStr}|${hash}|${type.id}`;
-            
-            // Modal məlumatlarını doldur
-            document.getElementById('qrEmpName').textContent = currentEmployee.fullName;
-            document.getElementById('qrEmpId').textContent = currentEmployee.id;
-            document.getElementById('qrTicketType').textContent = type.name;
-            
-            // QR kod yarat
             const qrDiv = document.getElementById('modalQR');
             qrDiv.innerHTML = '';
             
@@ -686,58 +403,62 @@
                 text: qrData,
                 width: 220,
                 height: 220,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
             });
             
             document.getElementById('qrModal').style.display = 'flex';
             
-            // İstifadə edilmiş kimi işarələ (simulyasiya)
+            // İstifadə edilmiş kimi işarələ (demo üçün)
             // Realda skanerdən təsdiq gələndə edilməlidir
-            // Burada istifadəçi QR göstərəndə hesab edirik ki, istifadə edildi
-            markAsUsed(type.id);
-        }
-
-        function markAsUsed(ticketId) {
-            usedTicket = ticketId;
-            localStorage.setItem(`usedTicket_${currentEmployee.id}`, ticketId);
-            
-            // Kartları yenilə (deaktiv olsunlar)
             setTimeout(() => {
-                generateTickets();
-            }, 500);
+                markUsed(type.id);
+            }, 5000); // 5 saniyə sonra avtomatik (demo üçün)
         }
 
-        function generateHash(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                const char = str.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            return Math.abs(hash % 9000 + 1000);
+        function markUsed(ticketId) {
+            usedTicket = ticketId;
+            localStorage.setItem(`ghg_used_${currentEmployee.id}`, ticketId);
+            renderTickets();
         }
 
         function closeModal(e) {
-            if (!e || e.target.id === 'qrModal' || e.target.className === 'qr-modal-close') {
+            if (!e || e.target.id === 'qrModal') {
                 document.getElementById('qrModal').style.display = 'none';
             }
+        }
+
+        function logout() {
+            localStorage.removeItem('ghg_employee');
+            location.reload();
         }
 
         // ==========================================
         // BAŞLANĞIC
         // ==========================================
-        window.onload = function() {
+        window.onload = () => {
             const saved = localStorage.getItem('ghg_employee');
             if (saved) {
-                try {
-                    currentEmployee = JSON.parse(saved);
-                    document.getElementById('employeeId').value = currentEmployee.id;
-                    enterApp();
-                } catch (e) {
-                    localStorage.removeItem('ghg_employee');
+                currentEmployee = JSON.parse(saved);
+                document.getElementById('employeeId').value = currentEmployee.id;
+                
+                // Tarix yoxla
+                todayStr = getTodayString();
+                const savedDate = localStorage.getItem(`ghg_date_${currentEmployee.id}`);
+                
+                if (savedDate === todayStr) {
+                    usedTicket = localStorage.getItem(`ghg_used_${currentEmployee.id}`);
                 }
+                
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                document.getElementById('displayName').textContent = currentEmployee.fullName;
+                document.getElementById('displayId').textContent = currentEmployee.id;
+                
+                const today = new Date();
+                document.getElementById('dateInfo').textContent = 
+                    '📅 ' + today.toLocaleDateString('az-AZ') + ' | Hər gün yeni kodlar';
+                
+                renderTickets();
             }
         };
     </script>
