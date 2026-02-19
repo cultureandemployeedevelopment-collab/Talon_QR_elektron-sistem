@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GHG Yemək Talonu</title>
     
-    <!-- Düzgün CDN - boşluqsuz -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
@@ -101,12 +100,6 @@
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-        }
-
-        .btn-fetch {
-            background: #2196f3;
-            color: white;
-            margin-top: 10px;
         }
 
         .btn:disabled {
@@ -344,10 +337,10 @@
         .qr-modal-time { color: #666; margin-bottom: 20px; font-size: 0.95em; }
 
         .qr-big {
-            width: 240px;
-            height: 240px;
+            width: 250px;
+            height: 250px;
             margin: 0 auto 20px;
-            padding: 15px;
+            padding: 10px;
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -356,12 +349,10 @@
             justify-content: center;
         }
 
-        /* QR kod üçün əlavə stil */
-        .qr-big canvas,
-        .qr-big img {
+        .qr-big canvas {
+            display: block;
             max-width: 100%;
             max-height: 100%;
-            display: block;
         }
 
         .qr-data-text {
@@ -369,7 +360,7 @@
             padding: 10px;
             border-radius: 8px;
             font-family: monospace;
-            font-size: 0.8em;
+            font-size: 0.75em;
             color: #333;
             margin-bottom: 15px;
             word-break: break-all;
@@ -393,13 +384,13 @@
             .qr-card { padding: 25px 15px; }
             .qr-card h3 { font-size: 1.1em; }
             .qr-icon { font-size: 50px; }
-            .qr-big { width: 280px; height: 280px; }
+            .qr-big { width: 300px; height: 300px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- LOGIN -->
+    <!-- LOGIN - Sadələşdirilmiş -->
     <div class="login-container" id="loginPage">
         <div class="login-box">
             <h1>🍽️ GHG Yemək</h1>
@@ -411,25 +402,12 @@
                     <input type="text" id="employeeId" placeholder="Məsələn: 100040" required autocomplete="off">
                 </div>
                 
-                <div class="form-group">
-                    <label for="firstName">Ad *</label>
-                    <input type="text" id="firstName" placeholder="Adınızı daxil edin" required autocomplete="off">
-                </div>
-                
-                <input type="hidden" id="lastName">
-                <input type="hidden" id="fatherName">
-                
-                <button type="button" class="btn btn-fetch" id="fetchBtn" onclick="fetchEmployeeData()">
-                    🔍 Məlumatları Çək
-                </button>
-                
-                <button type="submit" class="btn btn-primary" id="loginBtn" style="display: none; margin-top: 15px;">
+                <button type="submit" class="btn btn-primary" id="loginBtn">
                     Daxil Ol
                 </button>
             </form>
             
             <div class="error-message" id="errorMsg"></div>
-            <div class="success-message" id="successMsg"></div>
         </div>
     </div>
 
@@ -469,7 +447,7 @@
             <p class="qr-modal-time" id="modalTime">Vaxt</p>
             <div class="qr-big" id="modalQR"></div>
             <div class="qr-data-text" id="qrDataText"></div>
-            <p class="qr-hint">Bu kodu skanerə göstərin</p>
+            <p style="color: #666; font-size: 0.85em; margin-bottom: 15px;">Bu kodu skanerə göstərin</p>
             <button class="btn-cancel" onclick="closeModal()">Bağla</button>
         </div>
     </div>
@@ -478,7 +456,7 @@
         // ==========================================
         // KONFİQURASİYA
         // ==========================================
-        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwYDGIW6qxymHgBENgoQUzpmS71ZdnDuRaDqfC61uhf95XH4kZYppeUsGd9_B9PhN2J/exec';
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwdBU0We6YsxE77nzF2sbee4fzjAYonVX3cCHdKQPDVD6XkBU9BOnw7P0oZQfrC3JdV/exec';
         
         const TICKET_TYPES = [
             { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
@@ -493,125 +471,99 @@
         let refreshInterval = null;
 
         // ==========================================
-        // QR KOD YOXLAMA - Əgər kitabxana yüklənməyibsə
+        // LOGIN - Sadə, yalnız ID
         // ==========================================
-        function checkQRCodeLibrary() {
-            if (typeof QRCode === 'undefined') {
-                console.error('QRCode kitabxanası yüklənmədi!');
-                alert('Xəta: QR kod kitabxanası yüklənmədi! Səhifəni yeniləyin.');
-                return false;
-            }
-            return true;
-        }
-
-        // ==========================================
-        // JSONP İLƏ MƏLUMAT ÇƏK
-        // ==========================================
-        function fetchEmployeeData() {
+        async function handleLogin(e) {
+            e.preventDefault();
             const empId = document.getElementById('employeeId').value.trim();
-            const firstName = document.getElementById('firstName').value.trim();
-            const fetchBtn = document.getElementById('fetchBtn');
-            const loginBtn = document.getElementById('loginBtn');
             const errorMsg = document.getElementById('errorMsg');
-            const successMsg = document.getElementById('successMsg');
-
-            if (!empId || !firstName) {
-                errorMsg.textContent = '❌ ID və ad daxil edin!';
+            const loginBtn = document.getElementById('loginBtn');
+            
+            if (!empId) {
+                errorMsg.textContent = '❌ ID daxil edin!';
                 errorMsg.style.display = 'block';
-                successMsg.style.display = 'none';
                 return;
             }
 
-            fetchBtn.disabled = true;
-            fetchBtn.innerHTML = 'Yoxlanılır... <span class="loading"></span>';
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = 'Yoxlanılır... <span class="loading"></span>';
 
-            const callbackName = 'empCallback_' + Date.now();
-
-            window[callbackName] = function(data) {
-                delete window[callbackName];
-                const script = document.getElementById('jsonpScript');
-                if (script) script.remove();
-
-                if (data.status === 'success' && data.employee) {
-                    document.getElementById('lastName').value = data.employee.lastName || '';
-                    document.getElementById('fatherName').value = data.employee.fatherName || '';
+            try {
+                // Serverdən əməkdaş məlumatlarını çək
+                const employee = await fetchEmployeeById(empId);
+                
+                if (employee) {
+                    currentEmployee = {
+                        id: empId,
+                        fullName: employee.fullName,
+                        firstName: employee.firstName,
+                        lastName: employee.lastName,
+                        fatherName: employee.fatherName || ''
+                    };
                     
-                    const fullName = `${firstName} ${data.employee.lastName || ''} ${data.employee.fatherName || ''}`.trim();
-                    successMsg.textContent = `✅ Tapıldı: ${fullName}`;
-                    successMsg.style.display = 'block';
-                    errorMsg.style.display = 'none';
+                    // Yaddaşda saxla
+                    localStorage.setItem('savedEmployeeId', empId);
+                    localStorage.setItem('savedEmployeeData', JSON.stringify(currentEmployee));
                     
-                    fetchBtn.style.display = 'none';
-                    loginBtn.style.display = 'block';
+                    enterApp();
                 } else {
-                    errorMsg.textContent = '❌ Bu ID və ad ilə əməkdaş tapılmadı!';
+                    errorMsg.textContent = '❌ Bu ID ilə əməkdaş tapılmadı!';
                     errorMsg.style.display = 'block';
-                    successMsg.style.display = 'none';
-                    fetchBtn.disabled = false;
-                    fetchBtn.innerHTML = '🔍 Məlumatları Çək';
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = 'Daxil Ol';
                 }
-            };
+            } catch (e) {
+                console.error('Xəta:', e);
+                // Offline rejim - ID-ni yaddaşda yoxla və ya icazə ver
+                const cached = localStorage.getItem('savedEmployeeId');
+                if (cached === empId) {
+                    const savedData = localStorage.getItem('savedEmployeeData');
+                    if (savedData) {
+                        currentEmployee = JSON.parse(savedData);
+                        enterApp();
+                        return;
+                    }
+                }
+                
+                errorMsg.textContent = '❌ Bağlantı xətası! İnternet yoxlayın.';
+                errorMsg.style.display = 'block';
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = 'Daxil Ol';
+            }
+        }
 
-            setTimeout(function() {
-                if (window[callbackName]) {
+        // Serverdən əməkdaş çək
+        function fetchEmployeeById(empId) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'loginCallback_' + Date.now();
+                
+                window[callbackName] = function(data) {
                     delete window[callbackName];
-                    const script = document.getElementById('jsonpScript');
+                    const script = document.getElementById('loginScript');
                     if (script) script.remove();
                     
-                    errorMsg.textContent = '❌ Serverdən cavab gəlmədi!';
-                    errorMsg.style.display = 'block';
-                    successMsg.style.display = 'none';
-                    fetchBtn.disabled = false;
-                    fetchBtn.innerHTML = '🔍 Məlumatları Çək';
-                }
-            }, 10000);
+                    if (data.status === 'success' && data.employee) {
+                        resolve(data.employee);
+                    } else {
+                        resolve(null);
+                    }
+                };
 
-            const script = document.createElement('script');
-            script.id = 'jsonpScript';
-            script.src = `${SHEET_API_URL}?action=getEmployeeDetails&id=${encodeURIComponent(empId)}&name=${encodeURIComponent(firstName)}&callback=${callbackName}`;
-            script.onerror = function() {
-                errorMsg.textContent = '❌ Script yüklənmədi!';
-                errorMsg.style.display = 'block';
-                successMsg.style.display = 'none';
-                fetchBtn.disabled = false;
-                fetchBtn.innerHTML = '🔍 Məlumatları Çək';
-                delete window[callbackName];
-            };
-            
-            document.head.appendChild(script);
-        }
+                setTimeout(() => {
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                        const script = document.getElementById('loginScript');
+                        if (script) script.remove();
+                        reject(new Error('Timeout'));
+                    }
+                }, 8000);
 
-        // ==========================================
-        // LOGIN
-        // ==========================================
-        function handleLogin(e) {
-            e.preventDefault();
-            const id = document.getElementById('employeeId').value.trim();
-            const firstName = document.getElementById('firstName').value.trim();
-            const lastName = document.getElementById('lastName').value.trim();
-            const fatherName = document.getElementById('fatherName').value.trim();
-            
-            if (!id || !firstName) {
-                document.getElementById('errorMsg').textContent = '❌ ID və ad daxil edin!';
-                document.getElementById('errorMsg').style.display = 'block';
-                return;
-            }
-
-            const fullName = `${firstName} ${lastName} ${fatherName}`.trim();
-
-            currentEmployee = { 
-                id: id, 
-                fullName: fullName,
-                firstName: firstName,
-                lastName: lastName,
-                fatherName: fatherName
-            };
-            
-            localStorage.setItem('savedEmployeeId', id);
-            localStorage.setItem('savedEmployeeName', fullName);
-            localStorage.setItem('savedEmployeeData', JSON.stringify(currentEmployee));
-
-            enterApp();
+                const script = document.createElement('script');
+                script.id = 'loginScript';
+                script.src = `${SHEET_API_URL}?action=getEmployeeById&id=${encodeURIComponent(empId)}&callback=${callbackName}`;
+                script.onerror = () => reject(new Error('Script error'));
+                document.head.appendChild(script);
+            });
         }
 
         function enterApp() {
@@ -629,18 +581,14 @@
             if (refreshInterval) clearInterval(refreshInterval);
             
             localStorage.removeItem('savedEmployeeId');
-            localStorage.removeItem('savedEmployeeName');
             localStorage.removeItem('savedEmployeeData');
             
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('loginPage').style.display = 'flex';
             document.getElementById('loginForm').reset();
-            document.getElementById('fetchBtn').style.display = 'block';
-            document.getElementById('fetchBtn').disabled = false;
-            document.getElementById('fetchBtn').innerHTML = '🔍 Məlumatları Çək';
-            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('loginBtn').disabled = false;
+            document.getElementById('loginBtn').innerHTML = 'Daxil Ol';
             document.getElementById('errorMsg').style.display = 'none';
-            document.getElementById('successMsg').style.display = 'none';
         }
 
         // ==========================================
@@ -699,6 +647,8 @@
         function startAutoRefresh() {
             checkDailyRefresh();
             refreshInterval = setInterval(checkDailyRefresh, 60000);
+            // Skan yoxlaması
+            setInterval(checkScannedTicket, 5000);
         }
 
         // ==========================================
@@ -742,13 +692,16 @@
         }
 
         // ==========================================
-        // MODAL - DÜZƏLDİLMİŞ QR KOD
+        // QR MODAL - DÜZƏLDİLMİŞ
         // ==========================================
         function openModal(type) {
-            // Əvvəlcə kitabxananı yoxla
-            if (!checkQRCodeLibrary()) return;
-            
             if (!ticketsData[type.id] || ticketsData[type.id].used) return;
+            
+            // QRCode kitabxanası yüklənibmi?
+            if (typeof QRCode === 'undefined') {
+                alert('QR kod kitabxanası yüklənmədi! Səhifəni yeniləyin.');
+                return;
+            }
             
             currentModalType = type;
             const qrData = ticketsData[type.id].qrCode;
@@ -758,24 +711,21 @@
             document.getElementById('qrDataText').textContent = qrData;
             
             const qrDiv = document.getElementById('modalQR');
-            qrDiv.innerHTML = ''; // Təmizlə
+            qrDiv.innerHTML = '';
             
-            // QR kod yarat - DÜZƏLDİLMİŞ
+            // QR kod yarat
             try {
                 new QRCode(qrDiv, {
                     text: qrData,
-                    width: 200,
-                    height: 200,
+                    width: 230,
+                    height: 230,
                     colorDark: "#000000",
                     colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
+                    correctLevel: QRCode.CorrectLevel.H
                 });
-                
-                console.log('QR kod yaradıldı:', qrData);
-                
-            } catch (error) {
-                console.error('QR yaratma xətası:', error);
-                qrDiv.innerHTML = '<div style="color:red;padding:20px;">QR Kod Xətası</div>';
+            } catch (e) {
+                console.error('QR xətası:', e);
+                qrDiv.innerHTML = '<div style="color:red;">❌ QR Kod Xətası</div>';
             }
             
             document.getElementById('qrModal').style.display = 'flex';
@@ -789,14 +739,41 @@
         }
 
         // ==========================================
+        // SKAN YOXLAMA
+        // ==========================================
+        function checkScannedTicket() {
+            if (!currentEmployee) return;
+            
+            const callbackName = 'scanCheck_' + Date.now();
+            
+            window[callbackName] = function(data) {
+                delete window[callbackName];
+                const script = document.getElementById('scanScript');
+                if (script) script.remove();
+                
+                if (data.used && data.ticket) {
+                    const typeCode = data.ticket.charAt(0);
+                    const type = TICKET_TYPES.find(t => t.code === typeCode);
+                    
+                    if (type && !ticketsData[type.id].used) {
+                        ticketsData[type.id].used = true;
+                        ticketsData[type.id].usedTime = data.time;
+                        saveData();
+                        generateCards();
+                    }
+                }
+            };
+
+            const script = document.createElement('script');
+            script.id = 'scanScript';
+            script.src = `${SHEET_API_URL}?action=checkTicket&empId=${encodeURIComponent(currentEmployee.id)}&callback=${callbackName}`;
+            document.head.appendChild(script);
+        }
+
+        // ==========================================
         // BAŞLANĞIC
         // ==========================================
         window.onload = function() {
-            // Kitabxana yükləndiyini yoxla
-            if (typeof QRCode === 'undefined') {
-                console.warn('QRCode kitabxanası yüklənmədi, yenidən cəhd edilir...');
-            }
-            
             const savedData = localStorage.getItem('savedEmployeeData');
             if (savedData) {
                 currentEmployee = JSON.parse(savedData);
