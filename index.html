@@ -255,6 +255,7 @@
         let currentEmployee = null;
         let todayStr = '';
         let usedTicket = null;
+        let scanPollInterval = null;
 
         // ==========================================
         // HƏR GÜN YENİ QR YARADAN FUNKSIYA
@@ -405,14 +406,41 @@
                 height: 220,
                 correctLevel: QRCode.CorrectLevel.H
             });
+
+            document.getElementById('qrTicketInfo').textContent =
+                `${currentEmployee.fullName} | ${type.name} | Skan gözlənilir...`;
             
             document.getElementById('qrModal').style.display = 'flex';
-            
-            // İstifadə edilmiş kimi işarələ (demo üçün)
-            // Realda skanerdən təsdiq gələndə edilməlidir
-            setTimeout(() => {
-                markUsed(type.id);
-            }, 5000); // 5 saniyə sonra avtomatik (demo üçün)
+
+            startScanStatusPolling(type);
+        }
+
+        function startScanStatusPolling(type) {
+            if (scanPollInterval) {
+                clearInterval(scanPollInterval);
+                scanPollInterval = null;
+            }
+
+            const checkScanStatus = async () => {
+                try {
+                    const dateStr = getTodayString();
+                    const data = await fetchJSONP(
+                        `${SHEET_API_URL}?action=checkScanStatus&id=${currentEmployee.id}&ticketType=${type.id}&date=${dateStr}`
+                    );
+
+                    if (data && data.status === 'success' && data.used === true) {
+                        markUsed(type.id);
+                        closeModal();
+                        clearInterval(scanPollInterval);
+                        scanPollInterval = null;
+                    }
+                } catch (err) {
+                    // API hazır olmayanda avtomatik istifadə edildi yazılmasın
+                }
+            };
+
+            checkScanStatus();
+            scanPollInterval = setInterval(checkScanStatus, 3000);
         }
 
         function markUsed(ticketId) {
@@ -424,6 +452,11 @@
         function closeModal(e) {
             if (!e || e.target.id === 'qrModal') {
                 document.getElementById('qrModal').style.display = 'none';
+
+                if (scanPollInterval) {
+                    clearInterval(scanPollInterval);
+                    scanPollInterval = null;
+                }
             }
         }
 
