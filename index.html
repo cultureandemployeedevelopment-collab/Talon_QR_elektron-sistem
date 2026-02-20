@@ -201,7 +201,7 @@
                     <label>Parol</label>
                     <input type="password" id="employeePass" required>
                 </div>
-                <button type="submit" class="btn">Daxil Ol</button>
+                <button type="submit" class="btn" id="loginBtn">Daxil Ol</button>
             </form>
             <div id="errorMsg" style="color: red; margin-top: 10px; display: none;"></div>
         </div>
@@ -255,6 +255,8 @@
         let currentEmployee = null;
         let todayStr = '';
         let usedTicket = null;
+        let scanPollInterval = null;
+        const LOGIN_CREDENTIALS_KEY = 'ghg_login_credentials';
 
         // ==========================================
         // HƏR GÜN YENİ QR YARADAN FUNKSIYA
@@ -290,6 +292,16 @@
             e.preventDefault();
             const id = document.getElementById('employeeId').value.trim();
             const pass = document.getElementById('employeePass').value.trim();
+            const loginBtn = document.getElementById('loginBtn');
+
+            if (!id || !pass) {
+                showError('ID və parol daxil edin!');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Yoxlanılır...';
+            showInfo('Məlumatlar yoxlanılır...');
             
             try {
                 const data = await fetchJSONP(`${SHEET_API_URL}?action=login&id=${id}&pass=${pass}`);
@@ -314,6 +326,7 @@
                     }
                     
                     localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
+                    localStorage.setItem(LOGIN_CREDENTIALS_KEY, JSON.stringify({ id, pass }));
                     
                     document.getElementById('loginPage').style.display = 'none';
                     document.getElementById('mainApp').style.display = 'block';
@@ -331,6 +344,9 @@
                 }
             } catch (err) {
                 showError('Bağlantı xətası!');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Daxil Ol';
             }
         }
 
@@ -351,6 +367,14 @@
 
         function showError(msg) {
             const el = document.getElementById('errorMsg');
+            el.style.color = 'red';
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function showInfo(msg) {
+            const el = document.getElementById('errorMsg');
+            el.style.color = '#1976d2';
             el.textContent = msg;
             el.style.display = 'block';
         }
@@ -405,14 +429,41 @@
                 height: 220,
                 correctLevel: QRCode.CorrectLevel.H
             });
+
+            document.getElementById('qrTicketInfo').textContent =
+                `${currentEmployee.fullName} | ${type.name} | Skan gözlənilir...`;
             
             document.getElementById('qrModal').style.display = 'flex';
-            
-            // İstifadə edilmiş kimi işarələ (demo üçün)
-            // Realda skanerdən təsdiq gələndə edilməlidir
-            setTimeout(() => {
-                markUsed(type.id);
-            }, 5000); // 5 saniyə sonra avtomatik (demo üçün)
+
+            startScanStatusPolling(type);
+        }
+
+        function startScanStatusPolling(type) {
+            if (scanPollInterval) {
+                clearInterval(scanPollInterval);
+                scanPollInterval = null;
+            }
+
+            const checkScanStatus = async () => {
+                try {
+                    const dateStr = getTodayString();
+                    const data = await fetchJSONP(
+                        `${SHEET_API_URL}?action=checkScanStatus&id=${currentEmployee.id}&ticketType=${type.id}&date=${dateStr}`
+                    );
+
+                    if (data && data.status === 'success' && data.used === true) {
+                        markUsed(type.id);
+                        closeModal();
+                        clearInterval(scanPollInterval);
+                        scanPollInterval = null;
+                    }
+                } catch (err) {
+                    // API hazır olmayanda avtomatik istifadə edildi yazılmasın
+                }
+            };
+
+            checkScanStatus();
+            scanPollInterval = setInterval(checkScanStatus, 3000);
         }
 
         function markUsed(ticketId) {
@@ -424,6 +475,11 @@
         function closeModal(e) {
             if (!e || e.target.id === 'qrModal') {
                 document.getElementById('qrModal').style.display = 'none';
+
+                if (scanPollInterval) {
+                    clearInterval(scanPollInterval);
+                    scanPollInterval = null;
+                }
             }
         }
 
@@ -436,6 +492,17 @@
         // BAŞLANĞIC
         // ==========================================
         window.onload = () => {
+            const savedCredentials = localStorage.getItem(LOGIN_CREDENTIALS_KEY);
+            if (savedCredentials) {
+                try {
+                    const creds = JSON.parse(savedCredentials);
+                    document.getElementById('employeeId').value = creds.id || '';
+                    document.getElementById('employeePass').value = creds.pass || '';
+                } catch (err) {
+                    // ignore parse xətası
+                }
+            }
+
             const saved = localStorage.getItem('ghg_employee');
             if (saved) {
                 currentEmployee = JSON.parse(saved);
