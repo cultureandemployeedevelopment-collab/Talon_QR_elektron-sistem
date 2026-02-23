@@ -258,6 +258,18 @@
             gap: 10px;
             margin-top: 12px;
         }
+ codex/add-daily-unique-qr-code-with-rating-feature-zxo90n
+
+        .site-credit {
+            text-align: center;
+            color: rgba(255,255,255,0.95);
+            margin-top: 16px;
+            font-size: 0.9em;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+ main
     </style>
 </head>
 <body>
@@ -337,6 +349,11 @@
         </div>
     </div>
 
+ codex/add-daily-unique-qr-code-with-rating-feature-zxo90n
+    <div class="site-credit">by created CED</div>
+
+
+ main
     <script>
         const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxJPbFnffij4Z49X0kU3I4j5PghMJxbRrEx7UFcBWieAnFJN_zR4qwDnDpBTcM0D0cN/exec';
         
@@ -639,8 +656,15 @@
                 date: dateStr,
                 sheet: 'ID',
                 sheetName: 'ID',
+ codex/add-daily-unique-qr-code-with-rating-feature-zxo90n
+                column: 'Yemək Qiymətləndirmə',
+                columnName: 'Yemək Qiymətləndirmə',
+                targetColumn: 'Yemək Qiymətləndirmə',
+                ratingColumn: 'Yemək Qiymətləndirmə'
+
                 column: 'yemək qiymətləndir',
                 columnName: 'yemək qiymətləndir'
+ main
             });
 
             const data = await fetchJSONP(`${SHEET_API_URL}?${query}`);
@@ -686,7 +710,11 @@
 
                 if (success) {
                     closeRatingModal();
+ codex/add-daily-unique-qr-code-with-rating-feature-zxo90n
+                    alert('Qiymətləndirmə ID sheetində "Yemək Qiymətləndirmə" sütununa göndərildi.');
+
                     alert('Qiymətləndirmə ID sheetində "yemək qiymətləndir" sütununa göndərildi.');
+ main
                 } else {
                     throw new Error('submit-failed');
                 }
