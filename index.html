@@ -122,6 +122,12 @@
             border-radius: 20px;
             padding: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 16px;
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
         }
 
         .info-box {
@@ -231,6 +237,63 @@
             margin-top: 15px;
         }
 
+        .secondary-btn {
+            margin-top: 12px;
+            background: linear-gradient(135deg, #ff9800 0%, #ff3d00 100%);
+            color: #fff;
+            border: 2px solid #ffb74d;
+            box-shadow: 0 8px 22px rgba(255, 87, 34, 0.45);
+            animation: glowPulse 1.8s infinite;
+        }
+
+        .secondary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 26px rgba(255, 87, 34, 0.55);
+        }
+
+        @keyframes glowPulse {
+            0% { box-shadow: 0 6px 18px rgba(255, 87, 34, 0.35); }
+            50% { box-shadow: 0 10px 28px rgba(255, 87, 34, 0.65); }
+            100% { box-shadow: 0 6px 18px rgba(255, 87, 34, 0.35); }
+        }
+
+        .rating-stars {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 14px 0;
+        }
+
+        .star-btn {
+            font-size: 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #d7d7d7;
+        }
+
+        .star-btn.active {
+            color: #ffb300;
+        }
+
+        .rating-textarea {
+            width: 100%;
+            min-height: 110px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 15px;
+            resize: vertical;
+        }
+
+        .footer-sign {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.95);
+            margin-top: 20px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+        }
+
         @media (min-width: 768px) {
             .ticket-grid { grid-template-columns: repeat(4, 1fr); }
         }
@@ -279,6 +342,14 @@
                 </div>
                 <div id="ticketContainer" class="ticket-grid"></div>
             </div>
+
+            <div class="section">
+                <h3 style="margin-bottom: 10px; color: #2d2d2d;">🍽️ Yemək qiymətləndirmə</h3>
+                <p style="color: #666; font-size: 0.95em;">Yeməyi 5 bal üzərindən qiymətləndirib səbəbini yaza bilərsiniz.</p>
+                <button class="btn secondary-btn" onclick="openRatingModal()">⭐ Yemək Qiymətləndir</button>
+            </div>
+
+            <div class="footer-sign">by CED</div>
         </div>
     </div>
 
@@ -290,6 +361,20 @@
             <div class="qr-big" id="modalQR"></div>
             <p style="color: #666; font-size: 0.9em;">Bu kodu kafedəki skanerə göstərin</p>
             <button class="btn-close" onclick="closeModal()">Bağla</button>
+        </div>
+    </div>
+
+    <div class="qr-modal" id="ratingModal" onclick="closeRatingModal(event)">
+        <div class="qr-modal-content" onclick="event.stopPropagation()">
+            <h2>⭐ Yemək qiymətləndirmə</h2>
+            <p style="margin-top: 10px; color: #666;">1-5 ulduz seçin və səbəbini yazın</p>
+
+            <div class="rating-stars" id="ratingStars"></div>
+
+            <textarea id="ratingReason" class="rating-textarea" placeholder="Məsələn: Yemək çox dadlı idi və isti servis olundu."></textarea>
+
+            <button class="btn" style="margin-top: 14px;" onclick="submitRating()" id="ratingSubmitBtn">Qiymətləndirməni göndər</button>
+            <button class="btn-close" onclick="closeRatingModal()">Bağla</button>
         </div>
     </div>
 
@@ -308,7 +393,7 @@
 
         let currentEmployee = null;
         let todayStr = '';
-        let usedTicket = null;
+        let selectedRating = 0;
 
         // ==========================================
         // HƏR GÜN YENİ QR
@@ -355,7 +440,7 @@
                     reject(new Error('Timeout'));
                 }, 10000);
                 
-                script.src = url + '&callback=' + cb;
+                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
                 document.head.appendChild(script);
             });
         }
@@ -382,17 +467,11 @@
                     };
                     
                     todayStr = getTodayString();
-                    const savedDate = localStorage.getItem(`ghg_date_${id}`);
-                    
-                    if (savedDate !== todayStr) {
-                        localStorage.setItem(`ghg_date_${id}`, todayStr);
-                        localStorage.removeItem(`ghg_used_${id}`);
-                        usedTicket = null;
-                    } else {
-                        usedTicket = localStorage.getItem(`ghg_used_${id}`);
-                    }
+                    localStorage.setItem(`ghg_date_${id}`, todayStr);
                     
                     localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
+                    localStorage.setItem('ghg_login_id', id);
+                    localStorage.setItem('ghg_login_pass', pass);
                     
                     document.getElementById('loginPage').style.display = 'none';
                     document.getElementById('mainApp').style.display = 'block';
@@ -434,26 +513,15 @@
             container.innerHTML = '';
             
             TICKET_TYPES.forEach(type => {
-                const isUsed = usedTicket === type.id;
-                const isDisabled = usedTicket && usedTicket !== type.id;
-                
                 const card = document.createElement('div');
-                card.className = `ticket-card ${isUsed ? 'used' : ''} ${isDisabled ? 'disabled' : ''}`;
-                
-                if (!isUsed && !isDisabled) {
-                    card.onclick = () => showTicket(type);
-                }
-                
-                let statusText = '';
-                if (isUsed) statusText = '<span class="ticket-status status-used">İSTİFADƏ EDİLDİ</span>';
-                else if (isDisabled) statusText = '<span class="ticket-status status-disabled">DEAKTIV</span>';
-                else statusText = '<span class="ticket-status status-active">AKTIV</span>';
+                card.className = 'ticket-card';
+                card.onclick = () => showTicket(type);
                 
                 card.innerHTML = `
                     <div class="ticket-icon">${type.icon}</div>
                     <div class="ticket-name">${type.name}</div>
                     <div class="ticket-time">${type.time}</div>
-                    ${statusText}
+                    <span class="ticket-status status-active">AKTIV</span>
                 `;
                 
                 container.appendChild(card);
@@ -477,17 +545,7 @@
             });
             
             document.getElementById('qrModal').style.display = 'flex';
-            
-            // 5 saniyə sonra istifadə edilmiş kimi işarələ (demo)
-            setTimeout(() => {
-                markUsed(type.id);
-            }, 5000);
-        }
 
-        function markUsed(ticketId) {
-            usedTicket = ticketId;
-            localStorage.setItem(`ghg_used_${currentEmployee.id}`, ticketId);
-            renderTickets();
         }
 
         function closeModal(e) {
@@ -501,21 +559,91 @@
             location.reload();
         }
 
+        function renderRatingStars() {
+            const starsWrap = document.getElementById('ratingStars');
+            starsWrap.innerHTML = '';
+
+            for (let i = 1; i <= 5; i++) {
+                const star = document.createElement('button');
+                star.type = 'button';
+                star.className = `star-btn ${i <= selectedRating ? 'active' : ''}`;
+                star.innerHTML = '★';
+                star.onclick = () => {
+                    selectedRating = i;
+                    renderRatingStars();
+                };
+                starsWrap.appendChild(star);
+            }
+        }
+
+        function openRatingModal() {
+            selectedRating = 0;
+            document.getElementById('ratingReason').value = '';
+            renderRatingStars();
+            document.getElementById('ratingModal').style.display = 'flex';
+        }
+
+        function closeRatingModal(e) {
+            if (!e || e.target.id === 'ratingModal') {
+                document.getElementById('ratingModal').style.display = 'none';
+            }
+        }
+
+        async function submitRating() {
+            const reason = document.getElementById('ratingReason').value.trim();
+            const submitBtn = document.getElementById('ratingSubmitBtn');
+
+            if (!currentEmployee) {
+                alert('Əvvəlcə giriş edin.');
+                return;
+            }
+            if (!selectedRating) {
+                alert('Zəhmət olmasa ulduz seçin.');
+                return;
+            }
+            if (!reason) {
+                alert('Səbəbi yazın.');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Göndərilir...';
+
+            try {
+                const dateKey = getTodayString();
+                const url = `${SHEET_API_URL}?action=submitRating&employeeId=${encodeURIComponent(currentEmployee.id)}&fullName=${encodeURIComponent(currentEmployee.fullName)}&ratingStars=${encodeURIComponent(selectedRating)}&ratingText=${encodeURIComponent(reason)}&date=${encodeURIComponent(dateKey)}`;
+                const response = await fetchJSONP(url);
+
+                if (response.status === 'success') {
+                    alert('Qiymətləndirmə uğurla göndərildi.');
+                    closeRatingModal();
+                } else {
+                    alert(response.message || 'Qiymətləndirmə göndərilmədi.');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Bağlantı xətası!');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Qiymətləndirməni göndər';
+            }
+        }
+
         // ==========================================
         // BAŞLANĞIC
         // ==========================================
         window.onload = () => {
+            const savedLoginId = localStorage.getItem('ghg_login_id');
+            const savedLoginPass = localStorage.getItem('ghg_login_pass');
+            if (savedLoginId) document.getElementById('employeeId').value = savedLoginId;
+            if (savedLoginPass) document.getElementById('employeePass').value = savedLoginPass;
+
             const saved = localStorage.getItem('ghg_employee');
             if (saved) {
                 currentEmployee = JSON.parse(saved);
                 document.getElementById('employeeId').value = currentEmployee.id;
                 
                 todayStr = getTodayString();
-                const savedDate = localStorage.getItem(`ghg_date_${currentEmployee.id}`);
-                
-                if (savedDate === todayStr) {
-                    usedTicket = localStorage.getItem(`ghg_used_${currentEmployee.id}`);
-                }
                 
                 document.getElementById('loginPage').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
