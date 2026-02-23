@@ -639,8 +639,10 @@
                 date: dateStr,
                 sheet: 'ID',
                 sheetName: 'ID',
-                column: 'yemək qiymətləndir',
-                columnName: 'yemək qiymətləndir'
+                column: 'Yemək Qiymətləndirmə',
+                columnName: 'Yemək Qiymətləndirmə',
+                targetColumn: 'Yemək Qiymətləndirmə',
+                ratingColumn: 'Yemək Qiymətləndirmə'
             });
 
             const data = await fetchJSONP(`${SHEET_API_URL}?${query}`);
@@ -686,7 +688,7 @@
 
                 if (success) {
                     closeRatingModal();
-                    alert('Qiymətləndirmə ID sheetində "yemək qiymətləndir" sütununa göndərildi.');
+                    alert('Qiymətləndirmə ID sheetində "Yemək Qiymətləndirmə" sütununa göndərildi.');
                 } else {
                     throw new Error('submit-failed');
                 }
