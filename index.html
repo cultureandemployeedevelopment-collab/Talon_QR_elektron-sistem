@@ -380,7 +380,10 @@
 
         let currentEmployee = null;
         let todayStr = '';
+ codex/fix-login-error-and-add-meal-rating-feature-whyloo
+
         let usedTicket = null;
+ main
         let selectedRating = 0;
 
         // ==========================================
@@ -455,15 +458,7 @@
                     };
                     
                     todayStr = getTodayString();
-                    const savedDate = localStorage.getItem(`ghg_date_${id}`);
-                    
-                    if (savedDate !== todayStr) {
-                        localStorage.setItem(`ghg_date_${id}`, todayStr);
-                        localStorage.removeItem(`ghg_used_${id}`);
-                        usedTicket = null;
-                    } else {
-                        usedTicket = localStorage.getItem(`ghg_used_${id}`);
-                    }
+                    localStorage.setItem(`ghg_date_${id}`, todayStr);
                     
                     localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
                     localStorage.setItem('ghg_login_id', id);
@@ -509,26 +504,15 @@
             container.innerHTML = '';
             
             TICKET_TYPES.forEach(type => {
-                const isUsed = usedTicket === type.id;
-                const isDisabled = usedTicket && usedTicket !== type.id;
-                
                 const card = document.createElement('div');
-                card.className = `ticket-card ${isUsed ? 'used' : ''} ${isDisabled ? 'disabled' : ''}`;
-                
-                if (!isUsed && !isDisabled) {
-                    card.onclick = () => showTicket(type);
-                }
-                
-                let statusText = '';
-                if (isUsed) statusText = '<span class="ticket-status status-used">İSTİFADƏ EDİLDİ</span>';
-                else if (isDisabled) statusText = '<span class="ticket-status status-disabled">DEAKTIV</span>';
-                else statusText = '<span class="ticket-status status-active">AKTIV</span>';
+                card.className = 'ticket-card';
+                card.onclick = () => showTicket(type);
                 
                 card.innerHTML = `
                     <div class="ticket-icon">${type.icon}</div>
                     <div class="ticket-name">${type.name}</div>
                     <div class="ticket-time">${type.time}</div>
-                    ${statusText}
+                    <span class="ticket-status status-active">AKTIV</span>
                 `;
                 
                 container.appendChild(card);
@@ -552,17 +536,7 @@
             });
             
             document.getElementById('qrModal').style.display = 'flex';
-            
-            // 5 saniyə sonra istifadə edilmiş kimi işarələ (demo)
-            setTimeout(() => {
-                markUsed(type.id);
-            }, 5000);
-        }
 
-        function markUsed(ticketId) {
-            usedTicket = ticketId;
-            localStorage.setItem(`ghg_used_${currentEmployee.id}`, ticketId);
-            renderTickets();
         }
 
         function closeModal(e) {
@@ -661,11 +635,6 @@
                 document.getElementById('employeeId').value = currentEmployee.id;
                 
                 todayStr = getTodayString();
-                const savedDate = localStorage.getItem(`ghg_date_${currentEmployee.id}`);
-                
-                if (savedDate === todayStr) {
-                    usedTicket = localStorage.getItem(`ghg_used_${currentEmployee.id}`);
-                }
                 
                 document.getElementById('loginPage').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
