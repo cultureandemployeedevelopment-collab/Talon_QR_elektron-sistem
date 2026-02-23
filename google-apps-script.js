@@ -10,7 +10,12 @@ const CONFIG = {
   sheets: {
     scanner: 'Scanner',
     names: 'Adlar',
+ codex/duzlt-qeydiyyat-problemini-cumj8p
+    report: 'REPORT',
+    idSheet: 'ID'
+
     report: 'REPORT'
+ main
   },
   scannerStatus: {
     success: 'Təsdiqləndi',
@@ -44,6 +49,15 @@ function doGet(e) {
 
 function submitRating_(e) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+ codex/duzlt-qeydiyyat-problemini-cumj8p
+  const idSheet = mustGetSheet_(ss, CONFIG.sheets.idSheet);
+
+  const employeeId = getParam_(e, 'employeeId') || getParam_(e, 'id');
+  const fullName = getParam_(e, 'fullName');
+  const ratingText = (getParam_(e, 'ratingText') || getParam_(e, 'reason') || '').trim();
+  const ratingStars = Number(getParam_(e, 'ratingStars') || getParam_(e, 'rating') || 0);
+  const now = new Date();
+
   const scannerSheet = mustGetSheet_(ss, CONFIG.sheets.scanner);
 
   const employeeId = getParam_(e, 'employeeId') || getParam_(e, 'id');
@@ -52,6 +66,7 @@ function submitRating_(e) {
   const qrData = getParam_(e, 'qrData') || '';
   const ratingText = (getParam_(e, 'ratingText') || getParam_(e, 'reason') || '').trim();
   const ratingStars = Number(getParam_(e, 'ratingStars') || getParam_(e, 'rating') || 0);
+ main
 
   if (!employeeId) {
     return { status: 'error', message: 'employeeId boşdur' };
@@ -62,6 +77,43 @@ function submitRating_(e) {
   if (!ratingStars || ratingStars < 1 || ratingStars > 5) {
     return { status: 'error', message: 'ratingStars 1-5 arası olmalıdır' };
   }
+
+ codex/duzlt-qeydiyyat-problemini-cumj8p
+  const map = headerMap_(idSheet);
+  const idCol = findHeaderColumn_(map, ['id', 'əməkdaş id', 'emekdas id', 'employee id']);
+  const nameCol = findHeaderColumn_(map, ['ad və soyad', 'ad soyad', 'full name']);
+  const textCol = findHeaderColumn_(map, ['yemək qiymətləndirmə', 'yemek qiymetlendirme']);
+  const starsCol = findHeaderColumn_(map, ['ulduzla qiymətləndirmə', 'ulduzla qiymetlendirme']);
+  const dateCol = findHeaderColumn_(map, ['qiymetlendirme tarixi', 'rating date', 'tarix']);
+
+  if (!idCol || !textCol || !starsCol) {
+    return { status: 'error', message: 'ID sheet-də tələb olunan sütunlar tapılmadı' };
+  }
+
+  const rowIndex = findLatestRowByEmployeeInSheet_(idSheet, idCol, String(employeeId).trim());
+
+  if (rowIndex > 0) {
+    idSheet.getRange(rowIndex, textCol).setValue(ratingText);
+    idSheet.getRange(rowIndex, starsCol).setValue(ratingStars);
+    if (dateCol) idSheet.getRange(rowIndex, dateCol).setValue(now);
+
+    return {
+      status: 'success',
+      message: 'Qiymətləndirmə ID cədvəlində yeniləndi',
+      rowIndex: rowIndex
+    };
+  }
+
+  const newRow = idSheet.getLastRow() + 1;
+  idSheet.getRange(newRow, idCol).setValue(String(employeeId).trim());
+  if (nameCol && fullName) idSheet.getRange(newRow, nameCol).setValue(fullName);
+  idSheet.getRange(newRow, textCol).setValue(ratingText);
+  idSheet.getRange(newRow, starsCol).setValue(ratingStars);
+  if (dateCol) idSheet.getRange(newRow, dateCol).setValue(now);
+
+  return {
+    status: 'success',
+    message: 'Qiymətləndirmə ID cədvəlinə əlavə edildi',
 
   const map = headerMap_(scannerSheet);
   const ratingTextCol = findHeaderColumn_(map, ['yemək qiymətləndirmə', 'yemek qiymetlendirme']);
@@ -101,19 +153,29 @@ function submitRating_(e) {
   return {
     status: 'success',
     message: 'Qiymətləndirmə yeni sətrə yazıldı',
+ main
     rowIndex: newRow
   };
 }
 
+ codex/duzlt-qeydiyyat-problemini-cumj8p
+
+function findLatestRowByEmployeeInSheet_(sheet, idCol, employeeId) {
+
 function findLatestScannerRowByEmployee_(sheet, employeeId) {
+ main
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return 0;
 
   const map = headerMap_(sheet);
+ codex/duzlt-qeydiyyat-problemini-cumj8p
+  const dateCol = findHeaderColumn_(map, ['tarix', 'date', 'qiymetlendirme tarixi', 'rating date']);
+
   const idCol = findHeaderColumn_(map, ['əməkdaş id', 'emekdas id', 'employee id', 'id']);
   if (!idCol) return 0;
 
   const dateCol = findHeaderColumn_(map, ['tarix', 'date']);
+ main
   const values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
 
   const today = new Date();
