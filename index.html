@@ -239,7 +239,10 @@
 
         .secondary-btn {
             margin-top: 12px;
+codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+
  codex/fix-login-error-and-add-meal-rating-feature-3yt5ao
+ main
             background: linear-gradient(135deg, #ff9800 0%, #ff3d00 100%);
             color: #fff;
             border: 2px solid #ffb74d;
@@ -256,10 +259,13 @@
             0% { box-shadow: 0 6px 18px rgba(255, 87, 34, 0.35); }
             50% { box-shadow: 0 10px 28px rgba(255, 87, 34, 0.65); }
             100% { box-shadow: 0 6px 18px rgba(255, 87, 34, 0.35); }
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+
 
             background: #fff;
             color: #5b54c6;
             border: 2px solid #667eea;
+ main
  main
         }
 
@@ -352,10 +358,14 @@
             <div class="section">
                 <h3 style="margin-bottom: 10px; color: #2d2d2d;">🍽️ Yemək qiymətləndirmə</h3>
                 <p style="color: #666; font-size: 0.95em;">Yeməyi 5 bal üzərindən qiymətləndirib səbəbini yaza bilərsiniz.</p>
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+                <button class="btn secondary-btn" onclick="openRatingModal()">⭐ Yemək Qiymətləndir</button>
+
  codex/fix-login-error-and-add-meal-rating-feature-3yt5ao
                 <button class="btn secondary-btn" onclick="openRatingModal()">⭐ Yemək Qiymətləndir</button>
 
                 <button class="btn secondary-btn" onclick="openRatingModal()">Yemək Qiymətləndir</button>
+ main
  main
             </div>
 
@@ -403,11 +413,14 @@
 
         let currentEmployee = null;
         let todayStr = '';
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+
  codex/fix-login-error-and-add-meal-rating-feature-3yt5ao
 
  codex/fix-login-error-and-add-meal-rating-feature-whyloo
 
         let usedTicket = null;
+ main
  main
  main
         let selectedRating = 0;
@@ -455,7 +468,7 @@
                     delete window[cb];
                     script.remove();
                     reject(new Error('Timeout'));
-                }, 10000);
+                }, 4000);
                 
                 script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
                 document.head.appendChild(script);
@@ -472,7 +485,11 @@
             const btn = document.getElementById('loginBtn');
             
             btn.disabled = true;
-            btn.textContent = 'Yoxlanılır...';
+            btn.textContent = '⏳ Yoxlanılır...';
+            document.getElementById('errorMsg').style.display = 'none';
+
+            // UI dərhal yenilənsin ki, istifadəçi "Yoxlanılır..." mətnini görsün
+            await new Promise(resolve => setTimeout(resolve, 60));
             
             try {
                 const data = await fetchJSONP(`${SHEET_API_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}`);

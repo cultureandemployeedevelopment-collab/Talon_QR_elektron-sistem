@@ -1,10 +1,20 @@
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+var EMPLOYEES_FILE_ID = '1tJ_U_EtSF7YCjGahjKYn-w_TDgCuaPZL_tGMJ0ZFOdM';
+var SCANNER_FILE_ID = '-1RAGc0WsyXO6A7fjyad_nJDiLqM22eYREccJdjie3TMw';
+
 const EMPLOYEES_FILE_ID = '1tJ_U_EtSF7YCjGahjKYn-w_TDgCuaPZL_tGMJ0ZFOdM';
 const SCANNER_FILE_ID = '-1RAGc0WsyXO6A7fjyad_nJDiLqM22eYREccJdjie3TMw';
+ main
 
 function doGet(e) {
+  var callback = getParam_(e, 'callback');
   try {
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+    var action = getParam_(e, 'action');
+
     var action = getParam(e, 'action');
     var callback = getParam(e, 'callback');
+ main
     var result;
 
 codex/fix-login-error-and-add-meal-rating-feature-3yt5ao
@@ -19,16 +29,31 @@ codex/fix-login-error-and-add-meal-rating-feature-3yt5ao
     return sendJSONP({ status: 'error', message: String(err) }, getParam(e, 'callback'));
 
     if (action === 'login') {
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+      result = handleLogin_(e);
+    } else if (action === 'scanTicket') {
+      result = handleScan_(getParam_(e, 'qrData'));
+
       result = handleLogin(e);
     } else if (action === 'scanTicket') {
       result = handleScan(getParam(e, 'qrData'));
+ main
     } else if (action === 'checkScanStatus') {
-      result = handleCheckScanStatus(e);
+      result = handleCheckScanStatus_(e);
     } else if (action === 'submitRating') {
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+      result = handleSubmitRating_(e);
+
       result = handleSubmitRating(e);
+ main
     } else {
       result = { status: 'error', message: 'Naməlum əməliyyat' };
     }
+
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+    return sendJSONP_(result, callback);
+  } catch (err) {
+    return sendJSONP_({ status: 'error', message: String(err) }, callback);
 
     return sendJSONP(result, callback);
   } catch (error) {
@@ -37,6 +62,7 @@ codex/fix-login-error-and-add-meal-rating-feature-3yt5ao
 
     return sendJSONP({ status: 'error', message: error.toString() }, getParam(e, 'callback'));
  main
+ main
   }
 }
 
@@ -44,6 +70,34 @@ function doPost(e) {
   return doGet(e);
 }
 
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+function handleLogin_(e) {
+  var id = getParam_(e, 'id') || getParam_(e, 'employeeId');
+  var pass = getParam_(e, 'pass') || getParam_(e, 'password');
+
+  if (!id || !pass) {
+    return { status: 'error', message: 'ID və parol tələb olunur' };
+  }
+
+  var sheet = getEmployeesSheet_();
+  var data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) {
+    return { status: 'not_found', message: 'İstifadəçi tapılmadı' };
+  }
+
+  var cols = detectColumns_(data[0]);
+  if (cols.id < 0) {
+    return { status: 'error', message: 'ID sütunu tapılmadı' };
+  }
+
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (toText_(row[cols.id]) !== id) {
+      continue;
+    }
+
+    if (cols.pass >= 0 && toText_(row[cols.pass]) !== pass) {
+=======
 function handleLogin(e) {
   var id = getParam(e, 'id') || getParam(e, 'employeeId');
   var pass = getParam(e, 'pass') || getParam(e, 'password');
@@ -99,17 +153,30 @@ function handleLogin(e) {
     if (val(row[cols.id]) !== id) continue;
 
     if (cols.pass >= 0 && val(row[cols.pass]) !== pass) {
+ main
       return { status: 'invalid_pass', message: 'Parol yanlışdır' };
     }
+
+    var fullName = cols.name >= 0 ? toText_(row[cols.name]) : '';
+    var firstName = cols.firstName >= 0 ? toText_(row[cols.firstName]) : '';
+    var lastName = cols.lastName >= 0 ? toText_(row[cols.lastName]) : '';
+    var fatherName = cols.fatherName >= 0 ? toText_(row[cols.fatherName]) : '';
 
     return {
       status: 'success',
       employee: {
         id: id,
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+        fullName: fullName,
+        firstName: firstName,
+        lastName: lastName,
+        fatherName: fatherName
+
         fullName: cols.name >= 0 ? val(row[cols.name]) : '',
         firstName: cols.firstName >= 0 ? val(row[cols.firstName]) : '',
         lastName: cols.lastName >= 0 ? val(row[cols.lastName]) : '',
         fatherName: cols.fatherName >= 0 ? val(row[cols.fatherName]) : ''
+ main
       }
     };
   }
@@ -117,6 +184,77 @@ function handleLogin(e) {
   return { status: 'not_found', message: 'İstifadəçi tapılmadı' };
 }
 
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+function handleSubmitRating_(e) {
+  var employeeId = getParam_(e, 'employeeId') || getParam_(e, 'id');
+  var fullName = getParam_(e, 'fullName');
+  var ratingText = getParam_(e, 'ratingText') || getParam_(e, 'reason');
+  var ratingStars = Number(getParam_(e, 'ratingStars') || getParam_(e, 'rating'));
+  var dateKey = getParam_(e, 'date') || todayDateKey_();
+
+  if (!employeeId) {
+    return { status: 'error', message: 'employeeId boşdur' };
+  }
+  if (!ratingText) {
+    return { status: 'error', message: 'Səbəb boşdur' };
+  }
+  if (!ratingStars || ratingStars < 1 || ratingStars > 5) {
+    return { status: 'error', message: 'Ulduz 1-5 arası olmalıdır' };
+  }
+
+  var employeesSheet = getEmployeesSheet_();
+  var employeeData = findEmployeeById_(employeesSheet, employeeId);
+  if (!fullName) {
+    fullName = employeeData.fullName;
+  }
+
+  var ratingSheet = getOrCreateRatingSheet_(employeesSheet.getParent());
+  ensureRatingHeaders_(ratingSheet);
+
+  var headers = ratingSheet.getRange(1, 1, 1, Math.max(1, ratingSheet.getLastColumn())).getValues()[0];
+  var map = headerMap_(headers);
+  var row = ratingSheet.getLastRow() + 1;
+
+  writeByAliases_(ratingSheet, row, map, ['id', 'i̇d', 'əməkdaş id', 'employee id'], employeeId);
+  writeByAliases_(ratingSheet, row, map, ['ad və soyad', 'ad soyad', 'full name'], fullName || employeeData.fullName);
+  writeByAliases_(ratingSheet, row, map, ['ad', 'first name'], employeeData.firstName);
+  writeByAliases_(ratingSheet, row, map, ['soyad', 'last name'], employeeData.lastName);
+  writeByAliases_(ratingSheet, row, map, ['ata adı', 'ata adi', 'father name'], employeeData.fatherName);
+  writeByAliases_(ratingSheet, row, map, ['ulduzla qiymətləndirmə', 'ulduzla qiymetlendirme', 'ulduz'], ratingStars);
+  writeByAliases_(ratingSheet, row, map, ['yemək qiymətləndirmə', 'yemek qiymetlendirme', 'qiymətləndirmə mətni'], ratingText);
+  writeByAliases_(ratingSheet, row, map, ['tarix', 'date', 'datekey'], dateKey);
+
+  return { status: 'success', message: 'Qiymətləndirmə əlavə edildi' };
+}
+
+function handleScan_(qrData) {
+  if (!qrData) {
+    return { status: 'error', message: 'QR data boşdur' };
+  }
+
+  var parsed = parseQR_(qrData);
+  if (!parsed) {
+    return { status: 'error', message: 'Yanlış QR formatı' };
+  }
+
+  if (parsed.dateKey !== todayDateKey_()) {
+    return { status: 'error', message: 'Bu QR yalnız bu gün etibarlıdır' };
+  }
+
+  var scannerSheet = getScannerSheet_();
+  var rows = scannerSheet.getDataRange().getValues();
+  var duplicate = false;
+
+  for (var i = 1; i < rows.length; i++) {
+    if (
+      toText_(rows[i][2]) === parsed.dateKey &&
+      toText_(rows[i][3]) === parsed.empId &&
+      toText_(rows[i][6]) === parsed.typeId &&
+      toText_(rows[i][8]) === 'Təsdiqləndi'
+    ) {
+      duplicate = true;
+      break;
+=======
 function handleSubmitRating(e) {
   var employeeId = getParam(e, 'employeeId') || getParam(e, 'id');
   var fullName = getParam(e, 'fullName');
@@ -258,7 +396,64 @@ function handleSubmitRating(e) {
         targetRow = r + 1;
         break;
       }
+ main
     }
+  }
+
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+  var now = new Date();
+  var statusText = duplicate ? 'Təkrar cəhd' : 'Təsdiqləndi';
+  var employee = findEmployeeById_(getEmployeesSheet_(), parsed.empId);
+
+  scannerSheet.appendRow([
+    Utilities.formatDate(now, 'Asia/Baku', 'dd.MM.yyyy'),
+    Utilities.formatDate(now, 'Asia/Baku', 'HH:mm:ss'),
+    parsed.dateKey,
+    parsed.empId,
+    employee.fullName || 'Naməlum əməkdaş',
+    ticketTypeName_(parsed.typeCode),
+    parsed.typeId,
+    qrData,
+    statusText
+  ]);
+
+  if (duplicate) {
+    return { status: 'warning', message: 'Təkrar cəhd' };
+  }
+  return { status: 'success', message: 'Təsdiqləndi' };
+}
+
+function handleCheckScanStatus_(e) {
+  var empId = getParam_(e, 'id');
+  var ticketType = getParam_(e, 'ticketType');
+  var dateKey = getParam_(e, 'date') || todayDateKey_();
+
+  if (!empId || !ticketType) {
+    return { status: 'error', used: false, message: 'Parametrlər natamamdır' };
+  }
+
+  var scannerSheet = getScannerSheet_();
+  var rows = scannerSheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    if (
+      toText_(rows[i][2]) === dateKey &&
+      toText_(rows[i][3]) === empId &&
+      toText_(rows[i][6]) === ticketType &&
+      toText_(rows[i][8]) === 'Təsdiqləndi'
+    ) {
+      return { status: 'success', used: true };
+    }
+  }
+
+  return { status: 'success', used: false };
+}
+
+function parseQR_(qrData) {
+  var parts = String(qrData || '').split('|');
+  if (parts.length < 6 || parts[0] !== 'GHG') {
+    return null;
+  }
 
     if (targetRow === -1) {
       targetRow = sheet.getLastRow() + 1;
@@ -404,11 +599,118 @@ function handleCheckScanStatus(e) {
   }
   return { status: 'success', used: false };
 }
+ main
 
 function parseQR(qrData) {
   var parts = String(qrData || '').split('|');
   if (parts.length < 6 || parts[0] !== 'GHG') return null;
   return {
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+    empId: toText_(parts[1]),
+    typeCode: toText_(parts[2]),
+    dateKey: toText_(parts[3]),
+    hash: toText_(parts[4]),
+    typeId: toText_(parts[5])
+  };
+}
+
+function getEmployeesSpreadsheet_() {
+  try {
+    return SpreadsheetApp.openById(EMPLOYEES_FILE_ID);
+  } catch (e) {
+    return SpreadsheetApp.getActiveSpreadsheet();
+  }
+}
+
+function getScannerSpreadsheet_() {
+  try {
+    return SpreadsheetApp.openById(SCANNER_FILE_ID);
+  } catch (e) {
+    return SpreadsheetApp.getActiveSpreadsheet();
+  }
+}
+
+function getEmployeesSheet_() {
+  var ss = getEmployeesSpreadsheet_();
+  return ss.getSheetByName('Cadvel1') || ss.getSheetByName('Cədvəl1') || ss.getSheets()[0];
+}
+
+function getOrCreateRatingSheet_(ss) {
+  var sheet = ss.getSheetByName('Yemək qiymətləndirməsi') || ss.getSheetByName('Yemek qiymetlendirmesi');
+  if (!sheet) {
+    sheet = ss.insertSheet('Yemək qiymətləndirməsi');
+  }
+  return sheet;
+}
+
+function getScannerSheet_() {
+  var ss = getScannerSpreadsheet_();
+  var sheet = ss.getSheetByName('Scanner');
+  if (!sheet) {
+    sheet = ss.insertSheet('Scanner');
+    sheet.appendRow(['Tarix', 'Saat', 'DateKey', 'Əməkdaş ID', 'Ad Soyad', 'Talon Növü', 'TicketTypeId', 'Talon ID', 'Status']);
+  }
+  return sheet;
+}
+
+function ensureRatingHeaders_(sheet) {
+  var required = ['İD', 'Ad və Soyad', 'Ad', 'Soyad', 'Ata adı', 'Ulduzla qiymətləndirmə', 'Yemək Qiymətləndirmə', 'Tarix'];
+
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(required);
+    return;
+  }
+
+  var headers = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0];
+  var normalized = [];
+  for (var i = 0; i < headers.length; i++) {
+    normalized.push(normalize_(headers[i]));
+  }
+
+  for (var r = 0; r < required.length; r++) {
+    var key = normalize_(required[r]);
+    if (normalized.indexOf(key) === -1) {
+      sheet.getRange(1, sheet.getLastColumn() + 1).setValue(required[r]);
+      normalized.push(key);
+    }
+  }
+}
+
+function findEmployeeById_(sheet, employeeId) {
+  var data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) {
+    return { fullName: '', firstName: '', lastName: '', fatherName: '' };
+  }
+
+  var cols = detectColumns_(data[0]);
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (cols.id < 0 || toText_(row[cols.id]) !== employeeId) {
+      continue;
+    }
+
+    var fullName = cols.name >= 0 ? toText_(row[cols.name]) : '';
+    var firstName = cols.firstName >= 0 ? toText_(row[cols.firstName]) : '';
+    var lastName = cols.lastName >= 0 ? toText_(row[cols.lastName]) : '';
+    var fatherName = cols.fatherName >= 0 ? toText_(row[cols.fatherName]) : '';
+
+    if ((!firstName || !lastName) && fullName) {
+      var parts = fullName.split(' ');
+      var clean = [];
+      for (var p = 0; p < parts.length; p++) {
+        if (parts[p]) clean.push(parts[p]);
+      }
+      if (!firstName && clean.length > 0) firstName = clean[0];
+      if (!lastName && clean.length > 1) lastName = clean.slice(1).join(' ');
+    }
+
+    return {
+      fullName: fullName,
+      firstName: firstName,
+      lastName: lastName,
+      fatherName: fatherName
+    };
+
     empId: val(parts[1]),
     typeCode: val(parts[2]),
     dateKey: val(parts[3]),
@@ -655,9 +957,74 @@ function buildHeaderMap(headers) {
   var map = {};
   for (var i = 0; i < headers.length; i++) {
     map[normalize(headers[i])] = i + 1;
+ main
   }
   return map;
 }
+
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+  return { fullName: '', firstName: '', lastName: '', fatherName: '' };
+}
+
+function detectColumns_(headers) {
+  return {
+    id: findColumn_(headers, ['id', 'i̇d', 'əməkdaş id', 'employee id']),
+    name: findColumn_(headers, ['ad və soyad', 'ad soyad', 'full name']),
+    firstName: findColumn_(headers, ['ad', 'first name']),
+    lastName: findColumn_(headers, ['soyad', 'last name']),
+    fatherName: findColumn_(headers, ['ata adı', 'ata adi', 'father name']),
+    pass: findColumn_(headers, ['parol', 'password'])
+  };
+}
+
+function findColumn_(headers, aliases) {
+  var normalizedHeaders = [];
+  for (var i = 0; i < headers.length; i++) {
+    normalizedHeaders.push(normalize_(headers[i]));
+  }
+
+  for (var a = 0; a < aliases.length; a++) {
+    var alias = normalize_(aliases[a]);
+    for (var c = 0; c < normalizedHeaders.length; c++) {
+      if (normalizedHeaders[c] === alias || normalizedHeaders[c].indexOf(alias) !== -1 || alias.indexOf(normalizedHeaders[c]) !== -1) {
+        return c;
+      }
+    }
+  }
+  return -1;
+}
+
+function headerMap_(headers) {
+  var map = {};
+  for (var i = 0; i < headers.length; i++) {
+    map[normalize_(headers[i])] = i + 1;
+  }
+  return map;
+}
+
+function writeByAliases_(sheet, row, map, aliases, value) {
+  for (var i = 0; i < aliases.length; i++) {
+    var col = map[normalize_(aliases[i])];
+    if (col) {
+      sheet.getRange(row, col).setValue(value);
+      return true;
+    }
+  }
+  return false;
+}
+
+function ticketTypeName_(code) {
+  var types = {
+    S: 'Səhər Yeməyi',
+    G: 'Günorta Yeməyi',
+    A: 'Axşam Yeməyi',
+    Q: 'Quru Talon'
+  };
+  return types[code] || 'Naməlum';
+}
+
+function normalize_(value) {
+  return String(value || '')
 
 function setIfExists(sheet, row, map, aliases, value) {
   for (var i = 0; i < aliases.length; i++) {
@@ -779,6 +1146,7 @@ function findColumnByHeader(headerRow, aliases) {
  main
 function normalize(t) {
   return String(t || '')
+ main
     .toLowerCase()
     .replace(/ı/g, 'i')
     .replace(/ə/g, 'e')
@@ -786,6 +1154,18 @@ function normalize(t) {
     .replace(/ü/g, 'u')
     .replace(/ş/g, 's')
     .replace(/ç/g, 'c')
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+    .replace(/ğ/g, 'g')
+    .trim();
+}
+
+function todayDateKey_() {
+  return Utilities.formatDate(new Date(), 'Asia/Baku', 'yyyyMMdd');
+}
+
+function getParam_(e, key) {
+  if (!e || !e.parameter || e.parameter[key] === undefined || e.parameter[key] === null) {
+
  codex/fix-login-error-and-add-meal-rating-feature-whyloo
     .replace(/ğ/g, 'g')
 
@@ -818,10 +1198,25 @@ function sendJSONP(data, callback) {
 
 function getParam(e, key) {
   if (!e || !e.parameter || typeof e.parameter[key] === 'undefined' || e.parameter[key] === null) {
+ main
     return '';
   }
   return String(e.parameter[key]).trim();
 }
+
+ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
+function toText_(value) {
+  return String(value || '').trim();
+}
+
+function sendJSONP_(payload, callback) {
+  var text = JSON.stringify(payload);
+  if (callback) {
+    return ContentService.createTextOutput(callback + '(' + text + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(text)
+    .setMimeType(ContentService.MimeType.JSON);
 
 function val(v) {
   return String(v || '').trim();
@@ -835,6 +1230,7 @@ function sendJSONP(data, callback) {
   }
   return ContentService.createTextOutput(json)
     .setMimeType(ContentService.MimeType.JSON);
+ main
  main
  main
 }
