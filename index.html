@@ -258,6 +258,19 @@
             gap: 10px;
             margin-top: 12px;
         }
+ codex/add-daily-unique-qr-code-with-rating-feature-7lfqo2
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zexocu
+
+ codex/add-daily-unique-qr-code-with-rating-feature-tqudid
+
+ codex/add-daily-unique-qr-code-with-rating-feature-5rbobn
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zxo90n
+ main
+ main
+ main
+ main
 
         .site-credit {
             text-align: center;
@@ -267,6 +280,20 @@
             font-weight: 600;
             letter-spacing: 0.3px;
         }
+ codex/add-daily-unique-qr-code-with-rating-feature-7lfqo2
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zexocu
+
+ codex/add-daily-unique-qr-code-with-rating-feature-tqudid
+
+ codex/add-daily-unique-qr-code-with-rating-feature-5rbobn
+
+
+ main
+ main
+ main
+ main
+main
     </style>
 </head>
 <body>
@@ -346,8 +373,31 @@
         </div>
     </div>
 
+codex/add-daily-unique-qr-code-with-rating-feature-7lfqo2
     <div class="site-credit">by created CED</div>
 
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zexocu
+    <div class="site-credit">by created CED</div>
+
+
+ codex/add-daily-unique-qr-code-with-rating-feature-tqudid
+    <div class="site-credit">by created CED</div>
+
+
+ codex/add-daily-unique-qr-code-with-rating-feature-5rbobn
+    <div class="site-credit">by created CED</div>
+
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zxo90n
+    <div class="site-credit">by created CED</div>
+
+
+ main
+ main
+ main
+ main
+ main
     <script>
         const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxJPbFnffij4Z49X0kU3I4j5PghMJxbRrEx7UFcBWieAnFJN_zR4qwDnDpBTcM0D0cN/exec';
         
@@ -395,6 +445,38 @@
         // ==========================================
         // LOGIN
         // ==========================================
+        function normalizeLoginResponse(data, fallbackId) {
+            if (!data || data.status !== 'success') return null;
+            const employee = data.employee || {};
+            return {
+                id: employee.id || data.id || fallbackId,
+                fullName: employee.fullName || data.fullName || data.name || 'İşçi'
+            };
+        }
+
+        async function attemptLogin(id, pass) {
+            const encodedId = encodeURIComponent(id);
+            const encodedPass = encodeURIComponent(pass);
+            const candidates = [
+                `${SHEET_API_URL}?action=login&id=${encodedId}&pass=${encodedPass}`,
+                `${SHEET_API_URL}?action=login&id=${encodedId}&password=${encodedPass}`,
+                `${SHEET_API_URL}?action=login&employeeId=${encodedId}&pass=${encodedPass}`,
+                `${SHEET_API_URL}?action=login&employeeId=${encodedId}&password=${encodedPass}`
+            ];
+
+            for (const url of candidates) {
+                try {
+                    const data = await fetchJSONP(url);
+                    const employee = normalizeLoginResponse(data, id);
+                    if (employee) return employee;
+                } catch (err) {
+                    // növbəti varianta keç
+                }
+            }
+
+            throw new Error('login-failed');
+        }
+
         async function handleLogin(e) {
             e.preventDefault();
             const id = document.getElementById('employeeId').value.trim();
@@ -411,6 +493,10 @@
             showInfo('Məlumatlar yoxlanılır...');
             
             try {
+ codex/add-daily-unique-qr-code-with-rating-feature-7lfqo2
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zexocu
+ main
                 const data = await fetchJSONP(`${SHEET_API_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}`);
                 
                 if (data && data.status === 'success') {
@@ -445,11 +531,44 @@
                         '📅 ' + today.toLocaleDateString('az-AZ') + ' | Hər gün yeni kodlar';
                     
                     renderTickets();
+
+ codex/add-daily-unique-qr-code-with-rating-feature-tqudid
+                const employee = await attemptLogin(id, pass);
+                currentEmployee = employee;
+
+                const data = await fetchJSONP(`${SHEET_API_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}`);
+ main
+                
+                // Bugünkü tarixi yoxla
+                todayStr = getTodayString();
+                const savedDate = localStorage.getItem(`ghg_date_${employee.id}`);
+                
+                // Yeni gündürsə, təmizlə
+                if (savedDate !== todayStr) {
+                    localStorage.setItem(`ghg_date_${employee.id}`, todayStr);
+                    localStorage.removeItem(`ghg_used_${employee.id}`);
+                    usedTicket = null;
+ main
                 } else {
-                    showError('ID və ya parol yanlışdır!');
+                    usedTicket = localStorage.getItem(`ghg_used_${employee.id}`);
                 }
+                
+                localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
+                localStorage.setItem(LOGIN_CREDENTIALS_KEY, JSON.stringify({ id, pass }));
+                
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                document.getElementById('displayName').textContent = currentEmployee.fullName;
+                document.getElementById('displayId').textContent = currentEmployee.id;
+                
+                // Tarixi göstər
+                const today = new Date();
+                document.getElementById('dateInfo').textContent = 
+                    '📅 ' + today.toLocaleDateString('az-AZ') + ' | Hər gün yeni kodlar';
+                
+                renderTickets();
             } catch (err) {
-                showError('Bağlantı xətası!');
+                showError('Qeydiyyat/giriş alınmadı. ID və parolu yoxlayın, problem qalarsa adminlə əlaqə saxlayın.');
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Daxil Ol';
@@ -460,6 +579,7 @@
             return new Promise((resolve, reject) => {
                 const cb = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
                 const script = document.createElement('script');
+ codex/add-daily-unique-qr-code-with-rating-feature-7lfqo2
                 let settled = false;
 
                 function cleanup() {
@@ -486,11 +606,54 @@
                     if (settled) return;
                     settled = true;
                     clearTimeout(timer);
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zexocu
+
+                const timeout = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('timeout'));
+                }, 10000);
+
+                function cleanup() {
+                    clearTimeout(timeout);
+                    if (window[cb]) delete window[cb];
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                }
+ main
+
+                window[cb] = (data) => {
+                    cleanup();
+                    resolve(data);
+                };
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zexocu
+                const timer = setTimeout(() => {
+                    delete window[cb];
+                    script.remove();
+                    reject(new Error('timeout'));
+                }, 10000);
+
+                script.onload = () => clearTimeout(timer);
+                script.onerror = () => {
+                    clearTimeout(timer);
+                    delete window[cb];
+                    script.remove();
+                    reject(new Error('jsonp-load-error'));
+                };
+
+                script.src = url + '&callback=' + cb;
+
+                script.onerror = () => {
+ main
                     cleanup();
                     reject(new Error('jsonp-load-error'));
                 };
 
                 script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
+ codex/add-daily-unique-qr-code-with-rating-feature-7lfqo2
+
+ main
+ main
                 document.head.appendChild(script);
             });
         }
@@ -673,10 +836,39 @@
                 date: dateStr,
                 sheet: 'ID',
                 sheetName: 'ID',
+ codex/add-daily-unique-qr-code-with-rating-feature-7lfqo2
+
+codex/add-daily-unique-qr-code-with-rating-feature-zexocu
+
+ codex/add-daily-unique-qr-code-with-rating-feature-tqudid
+
+ codex/add-daily-unique-qr-code-with-rating-feature-5rbobn
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zxo90n
+ main
+ main
+ main
+ main
                 column: 'Yemək Qiymətləndirmə',
                 columnName: 'Yemək Qiymətləndirmə',
                 targetColumn: 'Yemək Qiymətləndirmə',
                 ratingColumn: 'Yemək Qiymətləndirmə'
+ codex/add-daily-unique-qr-code-with-rating-feature-7lfqo2
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zexocu
+
+ codex/add-daily-unique-qr-code-with-rating-feature-tqudid
+
+ codex/add-daily-unique-qr-code-with-rating-feature-5rbobn
+
+
+                column: 'yemək qiymətləndir',
+                columnName: 'yemək qiymətləndir'
+ main
+ main
+ main
+ main
+ main
             });
 
             const data = await fetchJSONP(`${SHEET_API_URL}?${query}`);
@@ -722,7 +914,27 @@
 
                 if (success) {
                     closeRatingModal();
+ codex/add-daily-unique-qr-code-with-rating-feature-7lfqo2
                     alert('Qiymətləndirmə ID sheetində "Yemək Qiymətləndirmə" sütununa göndərildi.');
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zexocu
+                    alert('Qiymətləndirmə ID sheetində "Yemək Qiymətləndirmə" sütununa göndərildi.');
+
+ codex/add-daily-unique-qr-code-with-rating-feature-tqudid
+                    alert('Qiymətləndirmə ID sheetində "Yemək Qiymətləndirmə" sütununa göndərildi.');
+
+ codex/add-daily-unique-qr-code-with-rating-feature-5rbobn
+                    alert('Qiymətləndirmə ID sheetində "Yemək Qiymətləndirmə" sütununa göndərildi.');
+
+ codex/add-daily-unique-qr-code-with-rating-feature-zxo90n
+                    alert('Qiymətləndirmə ID sheetində "Yemək Qiymətləndirmə" sütununa göndərildi.');
+
+                    alert('Qiymətləndirmə ID sheetində "yemək qiymətləndir" sütununa göndərildi.');
+ main
+ main
+ main
+ main
+ main
                 } else {
                     throw new Error('submit-failed');
                 }
