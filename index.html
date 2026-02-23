@@ -3,825 +3,719 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GHG Yemək Talonu</title>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <title>GHG Yemək Talon Sistemi - QR Kodlar</title>
+    
+    <!-- QRCode.js CDN -->
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 10px;
+            padding: 20px;
         }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* LOGIN SƏHİFƏSİ */
         .login-container {
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
         }
+
         .login-box {
             background: white;
-            padding: 30px;
+            padding: 50px;
             border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             text-align: center;
+            animation: slideUp 0.5s;
         }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-box h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .login-box p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
             text-align: left;
         }
+
         .form-group label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             color: #333;
             font-weight: 600;
         }
+
         .form-group input {
             width: 100%;
-            padding: 14px;
+            padding: 15px;
             border: 2px solid #e0e0e0;
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 16px;
+            transition: border-color 0.3s;
         }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
         .btn {
             width: 100%;
-            padding: 16px;
+            padding: 15px;
             border: none;
-            border-radius: 12px;
+            border-radius: 25px;
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
         }
-        .main-app { display: none; }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        /* ƏSAS SƏHİFƏ */
+        .main-app {
+            display: none;
+        }
+
         .header {
             text-align: center;
             color: white;
-            margin-bottom: 20px;
-            padding: 10px;
+            margin-bottom: 30px;
         }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
         .user-info {
             background: rgba(255,255,255,0.2);
-            padding: 12px 20px;
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
             border-radius: 25px;
             display: inline-flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-            font-size: 0.9em;
+            gap: 15px;
+            margin-bottom: 20px;
         }
+
         .logout-btn {
             background: #f44336;
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
+            padding: 8px 15px;
+            border-radius: 15px;
             cursor: pointer;
+            font-size: 12px;
         }
+
         .section {
             background: white;
             border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: fadeIn 0.5s;
         }
-        .info-box {
-            background: #fff3e0;
-            border-left: 4px solid #ff9800;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            color: #e65100;
-            font-size: 0.9em;
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .ticket-grid {
+
+        .qr-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
         }
-        .ticket-card {
+
+        .qr-card {
             background: #f8f9fa;
-            border-radius: 16px;
+            border-radius: 15px;
             padding: 20px;
             text-align: center;
-            border: 3px solid #e0e0e0;
-            cursor: pointer;
+            border: 2px solid #e0e0e0;
             transition: all 0.3s;
         }
-        .ticket-card:hover:not(.used):not(.disabled) {
+
+        .qr-card:hover {
             transform: translateY(-5px);
-            border-color: #667eea;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
-        .ticket-card.selected {
-            background: #e3f2fd;
-            border-color: #2196f3;
-        }
-        .ticket-card.used {
+
+        .qr-card.used {
+            opacity: 0.6;
             background: #ffebee;
             border-color: #ef5350;
-            cursor: not-allowed;
-            opacity: 0.8;
         }
-        .ticket-card.disabled {
-            background: #eceff1;
-            border-color: #b0bec5;
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-        .ticket-icon { font-size: 40px; margin-bottom: 8px; }
-        .ticket-name { font-weight: 700; color: #333; }
-        .ticket-time { color: #666; font-size: 0.8em; margin: 5px 0; }
-        .ticket-status {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75em;
-            font-weight: bold;
-        }
-        .status-active { background: #4caf50; color: white; }
-        .status-used { background: #f44336; color: white; }
-        .status-disabled { background: #78909c; color: white; }
-        
-        .qr-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .qr-modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
-        }
-        .qr-big {
-            width: 250px; height: 250px;
-            margin: 20px auto;
-        }
-        .btn-close {
-            background: #e0e0e0;
+
+        .qr-card h3 {
             color: #333;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-        .date-info {
-            text-align: center;
-            color: #666;
             margin-bottom: 15px;
-            font-size: 0.9em;
+            font-size: 1.2em;
         }
-        .rating-section {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .rating-btn {
-            max-width: 420px;
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 14px;
-            font-size: 17px;
-            font-weight: 700;
-            color: #fff;
-            background: linear-gradient(135deg, #ff6f00 0%, #ff3d00 100%);
-            box-shadow: 0 8px 20px rgba(255, 87, 34, 0.35);
-            cursor: pointer;
-        }
-        .rating-btn:hover {
-            transform: translateY(-2px);
-        }
-        .rating-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.75);
-            z-index: 1100;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .rating-modal-content {
-            width: 100%;
-            max-width: 500px;
+
+        .qr-wrapper {
+            width: 200px;
+            height: 200px;
+            margin: 15px auto;
+            padding: 10px;
             background: white;
-            border-radius: 18px;
-            padding: 24px;
-        }
-        .stars {
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             display: flex;
+            align-items: center;
             justify-content: center;
-            gap: 8px;
-            margin: 14px 0;
-        }
-        .star {
-            font-size: 34px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #cfd8dc;
-        }
-        .star.active {
-            color: #ffb300;
-        }
-        .rating-modal textarea {
-            width: 100%;
-            min-height: 110px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 12px;
-            font-size: 15px;
-            resize: vertical;
-            margin-top: 8px;
-        }
-        .rating-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 12px;
+            position: relative;
+            min-height: 200px;
         }
 
-
-
-
-
-        .site-credit {
-            text-align: center;
-            color: rgba(255,255,255,0.95);
-            margin-top: 16px;
-            font-size: 0.9em;
-            font-weight: 600;
-            letter-spacing: 0.3px;
+        .qr-wrapper img, .qr-wrapper canvas {
+            max-width: 100%;
+            max-height: 100%;
         }
 
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
 
+        .status-unused {
+            background: #4caf50;
+            color: white;
+        }
 
+        .status-used {
+            background: #f44336;
+            color: white;
+        }
 
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            width: auto;
+            padding: 12px 30px;
+        }
 
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            width: auto;
+            padding: 12px 30px;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: auto;
+            padding: 12px 30px;
+        }
+
+        .refresh-info {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1976d2;
+        }
+
+        .refresh-info strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            .qr-card { page-break-inside: avoid; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- LOGIN -->
+    <!-- LOGIN SƏHİFƏSİ -->
     <div class="login-container" id="loginPage">
         <div class="login-box">
             <h1>🍽️ GHG Yemək</h1>
             <p>Elektron talon sistemi</p>
+            
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group">
-                    <label>İşçi ID</label>
-                    <input type="text" id="employeeId" required>
+                    <label for="firstName">Ad</label>
+                    <input type="text" id="firstName" placeholder="Məsələn: Əfqan" required autocomplete="off">
                 </div>
+                
                 <div class="form-group">
-                    <label>Parol</label>
-                    <input type="password" id="employeePass" required>
+                    <label for="lastName">Soyad</label>
+                    <input type="text" id="lastName" placeholder="Məsələn: Səfərov" required autocomplete="off">
                 </div>
-                <button type="submit" class="btn" id="loginBtn">Daxil Ol</button>
+                
+                <button type="submit" class="btn btn-primary" id="loginBtn">
+                    Daxil Ol
+                </button>
             </form>
-            <div id="errorMsg" style="color: red; margin-top: 10px; display: none;"></div>
+            
+            <div class="error-message" id="errorMsg">
+                ❌ Siz əməkdaş siyahısında tapılmadınız!
+            </div>
+            
+            <div class="success-message" id="successMsg">
+                ✅ Uğurlu! Yönləndirilir...
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #999; font-size: 12px;">
+                <p>💡 İpucu: Ad və soyadı düzgün yazın.<br>Ata adı avtomatik əlavə olunacaq.</p>
+            </div>
         </div>
     </div>
 
-    <!-- MAIN APP -->
+    <!-- QR KODLAR SƏHİFƏSİ -->
     <div class="main-app" id="mainApp">
-        <div class="header">
-            <div class="user-info">
-                <span>👤 <strong id="displayName"></strong></span>
-                <span>|</span>
-                <span>🆔 <span id="displayId"></span></span>
-                <button class="logout-btn" onclick="logout()">Çıxış</button>
-            </div>
-            <h1>🍽️ Yemək Talonlarım</h1>
-        </div>
-
         <div class="container">
+            <div class="header">
+                <div class="user-info no-print">
+                    <span>👤 <strong id="displayName"></strong></span>
+                    <span style="color: #ddd;">|</span>
+                    <span>🆔 <span id="displayId"></span></span>
+                    <button class="logout-btn" onclick="logout()">Çıxış</button>
+                </div>
+                <h1>🍽️ Yemək Talonlarım</h1>
+            </div>
+
+            <!-- QR Kodlar Bölməsi -->
             <div class="section">
-                <div class="date-info" id="dateInfo"></div>
-                <div class="info-box">
-                    <strong>⚠️ Gündə yalnız 1 talon!</strong><br>
-                    Seçdiyiniz talonu skan etdikdən sonra digərləri deaktiv olacaq. QR kodda bugünün tarixi olur və yalnız bu gün etibarlıdır.
+                <!-- ✅ AVTOMATIK YENİLƏMƏ İNFORMASİYASI -->
+                <div class="refresh-info">
+                    <strong>🔄 Avtomatik Yenilənmə</strong>
+                    Siz hər gün yeni talonlar alacaqsınız<br>
+                    <small>Son yenilənmə: <span id="lastRefresh">Hesablanır...</span></small>
                 </div>
-                <div id="ticketContainer" class="ticket-grid"></div>
-                <div class="rating-section">
-                    <button class="rating-btn" onclick="openRatingModal()">⭐ Əlavə yeməyi qiymətləndir</button>
+
+                <h2>🎫 Mənim 4 Yemək Talonum</h2>
+                <p style="color: #666; margin-bottom: 20px;">Hər talon yalnız bir dəfə istifadə edilə bilər</p>
+                
+                <div id="qrContainer" class="qr-grid">
+                    <!-- 4 QR kod bura gələcək -->
+                </div>
+                
+                <div class="no-print" style="margin-top: 30px; text-align: center;">
+                    <button class="btn btn-success" onclick="printQRs()">🖨️ Çap Et</button>
+                    <button class="btn btn-warning" onclick="downloadQRs()">💾 Yüklə</button>
+                    <button class="btn btn-info" onclick="manualRefreshQRs()">🔄 İndi Yenilə</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- QR MODAL -->
-    <div class="qr-modal" id="qrModal" onclick="closeModal(event)">
-        <div class="qr-modal-content" onclick="event.stopPropagation()">
-            <h2>🎫 Talonunuz Hazırdır</h2>
-            <p id="qrTicketInfo" style="margin: 10px 0; color: #666;"></p>
-            <div class="qr-big" id="modalQR"></div>
-            <p id="qrValidityInfo" style="color: #d84315; font-size: 0.95em; font-weight: 700;"></p>
-            <p style="color: #666; font-size: 0.9em;">Bu kodu kafedəki skanerə göstərin</p>
-            <button class="btn-close" onclick="closeModal()">Bağla</button>
-        </div>
-    </div>
-
-    <!-- RATING MODAL -->
-    <div class="rating-modal" id="ratingModal" onclick="closeRatingModal(event)">
-        <div class="rating-modal-content" onclick="event.stopPropagation()">
-            <h2>🍴 Əlavə yeməyi qiymətləndirin</h2>
-            <p style="color: #666; margin-top: 8px;">5 ulduz üzərindən qiymət verin və səbəbini yazın.</p>
-            <div class="stars" id="starsContainer"></div>
-            <label for="ratingReason" style="display:block; font-weight:600; color:#333; margin-top:10px;">Səbəb</label>
-            <textarea id="ratingReason" placeholder="Məsələn: yeməyin keyfiyyəti, dadı, xidməti və s."></textarea>
-            <div id="ratingError" style="color: #d32f2f; margin-top: 10px; display: none;"></div>
-            <div class="rating-actions">
-                <button class="btn" id="submitRatingBtn" onclick="submitRating()">Qiyməti göndər</button>
-                <button class="btn-close" style="margin-top: 0;" onclick="closeRatingModal()">Bağla</button>
-            </div>
-        </div>
-    </div>
-    <div class="site-credit">by created CED</div>
-
-
-<script>
- codex/fix-scanner-and-qr-code-updates-iu10e6
-        const API_ENDPOINTS = [
-            'https://script.google.com/macros/s/AKfycbwIuxpqFpC3sd6CXOMVe2MeODp1bJ9vggfu9VbmxDXH1itIOigLO-xmptb2x5QldWoa/exec',
-            'https://script.google.com/macros/s/AKfycbxJPbFnffij4Z49X0kU3I4j5PghMJxbRrEx7UFcBWieAnFJN_zR4qwDnDpBTcM0D0cN/exec'
-        ];
-
-        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbw0zgLL_s_aH_hoT59OWAtFp3ASbkRDRN0NYlUJVAJIPjHibpFpr8ZxtB7pJwZhSUEL/exec';
- main
+    <script>
+        // ============================================================
+        // GLOBAL KONFİQURASİYA
+        // ============================================================
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwkCc2MyyxfulJ178DCyITRFzj8Y52lP0njFQcHT9hLoXV2M223XNwK0NYKHf8zklg/exec';
+        
+        let currentEmployee = null;
+        let allEmployees = [];
+        
+        const TICKET_MAP_REVERSE = {
+            'breakfast': 'b',
+            'lunch': 'l',
+            'dinner': 'd',
+            'dry': 'dr'
+        };
 
         const TICKET_TYPES = [
-            { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
-            { id: 'lunch', name: 'Günorta Yeməyi', icon: '🌞', time: '12:00-15:00', code: 'G' },
-            { id: 'dinner', name: 'Axşam Yeməyi', icon: '🌙', time: '18:00-21:00', code: 'A' },
-            { id: 'dry', name: 'Quru Talon', icon: '📦', time: 'Hər zaman', code: 'Q' }
+            { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00' },
+            { id: 'lunch', name: 'Günorta Yeməyi', icon: '🌞', time: '12:00-15:00' },
+            { id: 'dinner', name: 'Axşam Yeməyi', icon: '🌙', time: '18:00-21:00' },
+            { id: 'dry', name: 'Quru Talon', icon: '📦', time: 'Hər zaman' }
         ];
 
-        let currentEmployee = null;
-        let todayStr = '';
-        let usedTicket = null;
-        let scanPollInterval = null;
-        let selectedRating = 0;
-        const LOGIN_CREDENTIALS_KEY = 'ghg_login_credentials';
+        // ============================================================
+        // AVTOMATIK YENİLƏMƏ FUNKSIYALARI
+        // ============================================================
+        function checkAndRefreshDailyTickets() {
+            const empId = currentEmployee.id;
+            const lastRefreshDate = localStorage.getItem(`lastRefresh_${empId}`);
+            const today = new Date().toDateString();
 
-        function getTodayString() {
-            const d = new Date();
-            return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
-        }
-
-        function generateDailyQR(type) {
-            // Scanner backend bu formatı oxuyur: GHG|ID|TYPE|DATE
-            return `GHG|${currentEmployee.id}|${type.code}|${getTodayString()}`;
-        }
-
-        async function fetchJSON(url) {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 15000);
-            try {
-                const res = await fetch(url, { method: 'GET', signal: controller.signal });
-                if (!res.ok) throw new Error('http-' + res.status);
-                return await res.json();
-            } finally {
-                clearTimeout(timer);
+            // ✅ Əgər bugün hələ yenilənməyibsə, yenilə
+            if (lastRefreshDate !== today) {
+                console.log('🔄 Hər gün yenilənmə başlanır...');
+                refreshAllTickets();
+                localStorage.setItem(`lastRefresh_${empId}`, today);
+                updateRefreshInfo();
+            } else {
+                console.log('✅ Bugün artıq yenilənib');
+                updateRefreshInfo();
             }
         }
 
-        function fetchJSONP(url) {
-            return new Promise((resolve, reject) => {
-                const cb = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-                const script = document.createElement('script');
-                let settled = false;
-
-                function cleanup() {
-                    if (window[cb]) delete window[cb];
-                    if (script.parentNode) script.parentNode.removeChild(script);
-                }
-
-                const timer = setTimeout(() => {
-                    if (settled) return;
-                    settled = true;
-                    cleanup();
-                    reject(new Error('timeout'));
-                }, 15000);
-
-                window[cb] = (data) => {
-                    if (settled) return;
-                    settled = true;
-                    clearTimeout(timer);
-                    cleanup();
-                    resolve(data);
-                };
-
-                script.onerror = () => {
-                    if (settled) return;
-                    settled = true;
-                    clearTimeout(timer);
-                    cleanup();
-                    reject(new Error('jsonp-load-error'));
-                };
-
-                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
-                document.head.appendChild(script);
-            });
-        }
-
-        async function requestAPI(url) {
-            try {
-                return await fetchJSON(url);
-            } catch (err) {
-                return await fetchJSONP(url);
-            }
-        }
-
- codex/fix-scanner-and-qr-code-updates-iu10e6
-        function parsePayload(data) {
-            if (typeof data === 'string') {
-                try { return JSON.parse(data); } catch (_) { return null; }
-            }
-            return data && typeof data === 'object' ? data : null;
-        }
-
-        function isSuccessPayload(payload) {
-            if (!payload || typeof payload !== 'object') return false;
-            const status = String(payload.status || payload.result || '').toLowerCase();
-            return status === 'success' || status === 'ok' || payload.ok === true || payload.success === true;
-        }
-
-        function normalizeLoginResponse(data, fallbackId) {
-            const payload = parsePayload(data);
-            if (!payload) return null;
-
-            const employee = payload.employee || payload.user || {};
-            const employeeId = employee.id || employee.employeeId || payload.id || payload.employeeId || fallbackId;
-            const fullName = employee.fullName || employee.name || payload.fullName || payload.name || 'İşçi';
-
-            if (!employeeId) return null;
-            if (!isSuccessPayload(payload) && !employee.id && !payload.id) return null;
-
-            return {
-                id: String(employeeId),
-                fullName: String(fullName || 'İşçi')
-
-        function normalizeLoginResponse(data, fallbackId) {
-            if (!data || typeof data !== 'object') return null;
-            const status = String(data.status || '').toLowerCase();
-            const employee = data.employee || {};
-            if (status !== 'success' && !employee.id) return null;
-            return {
-                id: String(employee.id || data.id || fallbackId),
-                fullName: employee.fullName || data.fullName || 'İşçi'
- main
-            };
-        }
-
-        async function attemptLogin(id, pass) {
-            const encodedId = encodeURIComponent(id);
-            const encodedPass = encodeURIComponent(pass);
- codex/fix-scanner-and-qr-code-updates-iu10e6
-
-            const paramVariants = [
-                `action=login&id=${encodedId}&pass=${encodedPass}`,
-                `action=login&id=${encodedId}&password=${encodedPass}`,
-                `action=login&employeeId=${encodedId}&pass=${encodedPass}`,
-                `action=login&employeeId=${encodedId}&password=${encodedPass}`
-            ];
-
-            let lastMessage = '';
-
-            for (const endpoint of API_ENDPOINTS) {
-                for (const params of paramVariants) {
-                    const url = `${endpoint}?${params}`;
-                    try {
-                        const raw = await requestAPI(url);
-                        const payload = parsePayload(raw);
-                        const employee = normalizeLoginResponse(payload, id);
-                        if (employee) {
-                            return { employee, endpoint };
-                        }
-                        if (payload && payload.message) lastMessage = String(payload.message);
-                    } catch (_) {
-                        // növbəti endpoint/variant yoxlanılır
-                    }
-                }
-            }
-
-            throw new Error(lastMessage || 'login-failed');
-
-            const candidates = [
-                `${SHEET_API_URL}?action=login&id=${encodedId}&pass=${encodedPass}`,
-                `${SHEET_API_URL}?action=login&employeeId=${encodedId}&password=${encodedPass}`
-            ];
-
-            for (const url of candidates) {
-                try {
-                    const employee = normalizeLoginResponse(await requestAPI(url), id);
-                    if (employee) return employee;
-                } catch (_) {}
-            }
-
-            throw new Error('login-failed');
- main
-        }
-
-        function showError(msg) {
-            const el = document.getElementById('errorMsg');
-            el.style.color = 'red';
-            el.textContent = msg;
-            el.style.display = 'block';
-        }
-
-        function showInfo(msg) {
-            const el = document.getElementById('errorMsg');
-            el.style.color = '#1976d2';
-            el.textContent = msg;
-            el.style.display = 'block';
-        }
-
-        async function handleLogin(e) {
-            e.preventDefault();
-            const id = document.getElementById('employeeId').value.trim();
-            const pass = document.getElementById('employeePass').value.trim();
-            const loginBtn = document.getElementById('loginBtn');
-            if (!id || !pass) return showError('ID və parol daxil edin!');
-
-            loginBtn.disabled = true;
-            loginBtn.textContent = 'Yoxlanılır...';
-            showInfo('Məlumatlar yoxlanılır...');
-
-            try {
- codex/fix-scanner-and-qr-code-updates-iu10e6
-                const loginResult = await attemptLogin(id, pass);
-                currentEmployee = loginResult.employee;
-
-                currentEmployee = await attemptLogin(id, pass);
- main
-                todayStr = getTodayString();
-                const savedDate = localStorage.getItem(`ghg_date_${currentEmployee.id}`);
-
-                if (savedDate !== todayStr) {
-                    localStorage.setItem(`ghg_date_${currentEmployee.id}`, todayStr);
-                    localStorage.removeItem(`ghg_used_${currentEmployee.id}`);
-                    usedTicket = null;
-                } else {
-                    usedTicket = localStorage.getItem(`ghg_used_${currentEmployee.id}`);
-                }
-
-                localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
-                localStorage.setItem(LOGIN_CREDENTIALS_KEY, JSON.stringify({ id, pass }));
-
-                document.getElementById('errorMsg').style.display = 'none';
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'block';
-                document.getElementById('displayName').textContent = currentEmployee.fullName;
-                document.getElementById('displayId').textContent = currentEmployee.id;
-                document.getElementById('dateInfo').textContent = '📅 ' + new Date().toLocaleDateString('az-AZ') + ' | Hər gün yeni kodlar';
-                renderTickets();
- codex/fix-scanner-and-qr-code-updates-iu10e6
-            } catch (err) {
-                showError(err && err.message && err.message !== 'login-failed'
-                    ? `Qeydiyyat/giriş alınmadı: ${err.message}`
-                    : 'Qeydiyyat/giriş alınmadı. ID və parolu yoxlayın.');
-
-            } catch (_) {
-                showError('Qeydiyyat/giriş alınmadı. ID və parolu yoxlayın.');
- main
-            } finally {
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Daxil Ol';
-            }
-        }
-
-        function renderTickets() {
-            const container = document.getElementById('ticketContainer');
-            container.innerHTML = '';
-
+        function refreshAllTickets() {
+            const empId = currentEmployee.id;
+            
+            // Bütün talonları sıfırla (istifadə edilmiş olanları da)
             TICKET_TYPES.forEach(type => {
-                const isUsed = usedTicket === type.id;
-                const isDisabled = usedTicket && usedTicket !== type.id;
-                const card = document.createElement('div');
-                card.className = `ticket-card ${isUsed ? 'used' : ''} ${isDisabled ? 'disabled' : ''}`;
-                if (!isUsed && !isDisabled) card.onclick = () => showTicket(type);
-
-                let statusText = '<span class="ticket-status status-active">AKTIV</span>';
-                if (isUsed) statusText = '<span class="ticket-status status-used">İSTİFADƏ EDİLDİ</span>';
-                else if (isDisabled) statusText = '<span class="ticket-status status-disabled">DEAKTIV</span>';
-
-                card.innerHTML = `<div class="ticket-icon">${type.icon}</div><div class="ticket-name">${type.name}</div><div class="ticket-time">${type.time}</div>${statusText}`;
-                container.appendChild(card);
+                currentEmployee.tickets[type.id] = {
+                    id: `${empId}_${type.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    type: type.id,
+                    used: false,
+                    usedDate: null,
+                    usedTime: null
+                };
             });
+
+            // LocalStorage-ə saxla
+            localStorage.setItem(`tickets_${empId}`, JSON.stringify(currentEmployee.tickets));
+
+            console.log('✅ Bütün talonlar yeniləndi!');
+            generateQRCardsHTML();
         }
 
-        function showTicket(type) {
-            const qrData = generateDailyQR(type);
-            document.getElementById('qrTicketInfo').textContent = `${currentEmployee.fullName} | ${type.name} | Skan gözlənilir...`;
-            document.getElementById('qrValidityInfo').textContent = `📅 Etibarlılıq: yalnız ${new Date().toLocaleDateString('az-AZ')}`;
-
-            const qrDiv = document.getElementById('modalQR');
-            qrDiv.innerHTML = '';
-            new QRCode(qrDiv, { text: qrData, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.H });
-
-            document.getElementById('qrModal').style.display = 'flex';
-            startScanStatusPolling(type);
-        }
-
-        function markUsed(typeId) {
-            usedTicket = typeId;
-            localStorage.setItem(`ghg_used_${currentEmployee.id}`, typeId);
-            renderTickets();
-        }
-
-        function startScanStatusPolling(type) {
-            if (scanPollInterval) clearInterval(scanPollInterval);
-
-            const checkScanStatus = async () => {
-                try {
- codex/fix-scanner-and-qr-code-updates-iu10e6
-                    let data = null;
-                    for (const endpoint of API_ENDPOINTS) {
-                        try {
-                            data = await requestAPI(`${endpoint}?action=checkScanStatus&id=${currentEmployee.id}&ticketType=${type.id}&date=${getTodayString()}`);
-                            if (data) break;
-                        } catch (_) {}
-                    }
-
-                    const data = await requestAPI(`${SHEET_API_URL}?action=checkScanStatus&id=${currentEmployee.id}&ticketType=${type.id}&date=${getTodayString()}`);
- main
-                    if (data && data.status === 'success' && data.used === true) {
-                        markUsed(type.id);
-                        closeModal();
-                        if (scanPollInterval) clearInterval(scanPollInterval);
-                        scanPollInterval = null;
-                    }
-                } catch (_) {}
-            };
-
-            checkScanStatus();
-            scanPollInterval = setInterval(checkScanStatus, 3000);
-        }
-
-        function closeModal(event) {
-            if (event && event.target && event.target.id !== 'qrModal') return;
-            document.getElementById('qrModal').style.display = 'none';
-            if (scanPollInterval) {
-                clearInterval(scanPollInterval);
-                scanPollInterval = null;
+        function manualRefreshQRs() {
+            if (confirm('Bütün talonlarınızı yenilətmək istədiyinizə əmin misiniz?')) {
+                refreshAllTickets();
+                alert('✅ Talonlar yeniləndi!');
             }
+        }
+
+        function updateRefreshInfo() {
+            const empId = currentEmployee.id;
+            const lastRefreshDate = localStorage.getItem(`lastRefresh_${empId}`);
+            const lastRefreshEl = document.getElementById('lastRefresh');
+
+            if (lastRefreshDate) {
+                lastRefreshEl.textContent = new Date(lastRefreshDate).toLocaleDateString('az-AZ');
+            } else {
+                lastRefreshEl.textContent = 'Yoxdur (bugün yenilənəcək)';
+            }
+        }
+
+        // ============================================================
+        // LOGİN FUNKSIYALARI
+        // ============================================================
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const loginBtn = document.getElementById('loginBtn');
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = 'Yoxlanılır... <span class="loading-spinner"></span>';
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            
+            try {
+                const response = await fetch(API_URL + '?t=' + Date.now());
+                
+                if (!response.ok) {
+                    throw new Error('API bağlantı xətası: ' + response.status);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status !== 'success') {
+                    throw new Error(data.message || 'Məlumat alına bilmədi');
+                }
+                
+                allEmployees = data.employees || [];
+                
+                const searchName = `${firstName} ${lastName}`.toLowerCase();
+                const foundEmployee = allEmployees.find(emp => {
+                    const fullNameLower = emp.fullName.toLowerCase();
+                    return fullNameLower.startsWith(searchName);
+                });
+                
+                if (foundEmployee) {
+                    currentEmployee = {
+                        id: foundEmployee.id,
+                        fullName: foundEmployee.fullName,
+                        firstName: firstName,
+                        lastName: lastName
+                    };
+                    
+                    const savedTickets = localStorage.getItem(`tickets_${currentEmployee.id}`);
+                    if (savedTickets) {
+                        currentEmployee.tickets = JSON.parse(savedTickets);
+                    } else {
+                        currentEmployee.tickets = generateTickets(currentEmployee.id);
+                    }
+                    
+                    // ✅ YENILƏNM   KONTROL ET
+                    checkAndRefreshDailyTickets();
+                    
+                    // ✅ SCANNER MƏLUMATINI SAX
+                    localStorage.setItem('currentEmployeeId', currentEmployee.id);
+                    localStorage.setItem(`employee_${currentEmployee.id}`, JSON.stringify(currentEmployee));
+                    
+                    successMsg.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        showMainApp();
+                    }, 1000);
+                    
+                } else {
+                    errorMsg.textContent = `❌ "${firstName} ${lastName}" əməkdaş siyahısında tapılmadı!`;
+                    errorMsg.style.display = 'block';
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = 'Daxil Ol';
+                }
+                
+            } catch (error) {
+                console.error('Login xətası:', error);
+                errorMsg.textContent = '❌ Xəta: ' + error.message;
+                errorMsg.style.display = 'block';
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = 'Daxil Ol';
+            }
+        }
+
+        function showMainApp() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            
+            document.getElementById('displayName').textContent = currentEmployee.fullName;
+            document.getElementById('displayId').textContent = currentEmployee.id;
+            
+            generateQRCardsHTML();
+            updateRefreshInfo();
         }
 
         function logout() {
-            localStorage.removeItem('ghg_employee');
-            localStorage.removeItem(LOGIN_CREDENTIALS_KEY);
             currentEmployee = null;
-            usedTicket = null;
-            document.getElementById('loginPage').style.display = 'flex';
+            allEmployees = [];
+            localStorage.removeItem('currentEmployeeId');
             document.getElementById('mainApp').style.display = 'none';
-            document.getElementById('employeePass').value = '';
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('loginForm').reset();
+            document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
+            document.getElementById('loginBtn').disabled = false;
+            document.getElementById('loginBtn').innerHTML = 'Daxil Ol';
         }
 
-        function openRatingModal() {
-            if (!currentEmployee) return;
-            selectedRating = 0;
-            document.getElementById('ratingReason').value = '';
-            document.getElementById('ratingError').style.display = 'none';
-            renderStars();
-            document.getElementById('ratingModal').style.display = 'flex';
-        }
-
-        function closeRatingModal(event) {
-            if (!event || event.target.id === 'ratingModal') {
-                document.getElementById('ratingModal').style.display = 'none';
-            }
-        }
-
-        function renderStars() {
-            const container = document.getElementById('starsContainer');
-            container.innerHTML = '';
-            for (let i = 1; i <= 5; i++) {
-                const starBtn = document.createElement('button');
-                starBtn.type = 'button';
-                starBtn.className = `star ${i <= selectedRating ? 'active' : ''}`;
-                starBtn.innerHTML = '★';
-                starBtn.onclick = () => {
-                    selectedRating = i;
-                    renderStars();
+        function generateTickets(empId) {
+            const tickets = {};
+            TICKET_TYPES.forEach(type => {
+                tickets[type.id] = {
+                    id: `${empId}_${type.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    type: type.id,
+                    used: false,
+                    usedDate: null,
+                    usedTime: null
                 };
-                container.appendChild(starBtn);
-            }
-        }
-
-        function buildQuery(params) {
-            return Object.keys(params)
-                .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
-                .join('&');
-        }
-
-        async function submitRatingToSheet(id, fullName, rating, reason, dateStr) {
-            const query = buildQuery({
-                action: 'submitRating',
-                id,
-                employeeId: id,
-                fullName,
-                rating: String(rating),
-                ratingStars: String(rating),
-                reason,
-                ratingText: reason,
-                date: dateStr
             });
-
- codex/fix-scanner-and-qr-code-updates-iu10e6
-            let data = null;
-            for (const endpoint of API_ENDPOINTS) {
-                try {
-                    data = await requestAPI(`${endpoint}?${query}`);
-                    if (data) break;
-                } catch (_) {}
-            }
-
-            const data = await requestAPI(`${SHEET_API_URL}?${query}`);
- main
-            return !!(data && (data.status === 'success' || data.result === 'success' || data.ok === true));
+            return tickets;
         }
 
-        async function submitRating() {
-            const reason = document.getElementById('ratingReason').value.trim();
-            const errorEl = document.getElementById('ratingError');
-            const submitBtn = document.getElementById('submitRatingBtn');
-
-            if (selectedRating < 1 || selectedRating > 5) {
-                errorEl.textContent = 'Zəhmət olmasa ulduz seçin (1-5).';
-                errorEl.style.display = 'block';
+        // ============================================================
+        // QR KOD YARATMA FUNKSIYALARI
+        // ============================================================
+        function generateQRCardsHTML() {
+            const container = document.getElementById('qrContainer');
+            
+            if (!container) {
+                console.error('❌ qrContainer element tapılmadı!');
                 return;
             }
-            if (!reason) {
-                errorEl.textContent = 'Səbəbi yazın ki, sheet-də görünsün.';
-                errorEl.style.display = 'block';
+            
+            container.innerHTML = '';
+            
+            TICKET_TYPES.forEach((type, index) => {
+                const ticket = currentEmployee.tickets[type.id];
+                const isUsed = ticket.used;
+                
+                const card = document.createElement('div');
+                card.className = `qr-card ${isUsed ? 'used' : ''}`;
+                card.id = `card-${type.id}`;
+                
+                const wrapperId = `wrapper-${type.id}`;
+                
+                let cardHTML = `
+                    <h3>${type.icon} ${type.name}</h3>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 10px;">🕐 ${type.time}</p>
+                    <div class="qr-wrapper" id="${wrapperId}"></div>
+                    <span class="status-badge ${isUsed ? 'status-used' : 'status-unused'}">
+                        ${isUsed ? '❌ İstifadə Edilib' : '✅ Aktiv'}
+                    </span>
+                `;
+                
+                if (isUsed) {
+                    cardHTML += `
+                        <p style="margin-top:10px;font-size:12px;color:#666;">
+                            📅 ${ticket.usedDate}<br>
+                            🕐 ${ticket.usedTime}
+                        </p>
+                    `;
+                }
+                
+                card.innerHTML = cardHTML;
+                container.appendChild(card);
+                
+                if (!isUsed) {
+                    setTimeout(() => {
+                        createQRCode(type, ticket, wrapperId);
+                    }, 200 + (index * 300));
+                } else {
+                    const wrapper = document.getElementById(wrapperId);
+                    if (wrapper) {
+                        wrapper.innerHTML = '<div style="font-size:80px;color:#f44336;">❌</div>';
+                    }
+                }
+            });
+        }
+
+        function createQRCode(type, ticket, wrapperId) {
+            const wrapper = document.getElementById(wrapperId);
+            
+            if (!wrapper) {
+                console.error(`❌ Wrapper element tapılmadı: ${wrapperId}`);
                 return;
             }
-
-            errorEl.style.display = 'none';
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Göndərilir...';
-
+            
+            if (typeof QRCode === 'undefined') {
+                console.error('❌ QRCode kütüphanəsi yüklənmədi!');
+                wrapper.innerHTML = `<div style="padding:20px;text-align:center;color:red;"><strong>QRCode Yüklənmədi</strong></div>`;
+                return;
+            }
+            
+            const ticketIdShort = ticket.id.split('_')[3] || '0';
+            const typeCode = TICKET_MAP_REVERSE[type.id];
+            const qrData = `${currentEmployee.id}|${typeCode}|${ticketIdShort}`;
+            
+            console.log(`✅ QR yaradılır: ${type.name}`);
+            
+            wrapper.innerHTML = '';
+            
             try {
-                const ok = await submitRatingToSheet(currentEmployee.id, currentEmployee.fullName, selectedRating, reason, getTodayString());
-                if (!ok) throw new Error('submit-failed');
-                closeRatingModal();
-                alert('Qiymətləndirmə uğurla göndərildi.');
-            } catch (_) {
-                errorEl.textContent = 'Göndərmə zamanı xəta baş verdi. Yenidən cəhd edin.';
-                errorEl.style.display = 'block';
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Qiyməti göndər';
+                new QRCode(wrapper, {
+                    text: qrData,
+                    width: 140,
+                    height: 140,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.L
+                });
+                
+                console.log(`✅ QR uğurla yaradıldı: ${type.name}`);
+                
+            } catch (error) {
+                console.error(`❌ QR yaratma xətası:`, error);
+                wrapper.innerHTML = `<div style="padding:20px;text-align:center;color:red;"><strong>QR Xətası</strong></div>`;
             }
         }
 
-        window.onload = () => {
-            const savedCredentials = localStorage.getItem(LOGIN_CREDENTIALS_KEY);
-            if (savedCredentials) {
-                try {
-                    const creds = JSON.parse(savedCredentials);
-                    document.getElementById('employeeId').value = creds.id || '';
-                    document.getElementById('employeePass').value = creds.pass || '';
-                } catch (_) {}
-            }
+        function printQRs() {
+            window.print();
+        }
 
-            const saved = localStorage.getItem('ghg_employee');
-            if (!saved) return;
-
-            try {
-                currentEmployee = JSON.parse(saved);
-                todayStr = getTodayString();
-                const savedDate = localStorage.getItem(`ghg_date_${currentEmployee.id}`);
-                if (savedDate === todayStr) usedTicket = localStorage.getItem(`ghg_used_${currentEmployee.id}`);
-
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'block';
-                document.getElementById('displayName').textContent = currentEmployee.fullName;
-                document.getElementById('displayId').textContent = currentEmployee.id;
-                document.getElementById('dateInfo').textContent = '📅 ' + new Date().toLocaleDateString('az-AZ') + ' | Hər gün yeni kodlar';
-                renderTickets();
-            } catch (_) {
-                localStorage.removeItem('ghg_employee');
-            }
-        };
+        function downloadQRs() {
+            TICKET_TYPES.forEach((type, index) => {
+                const canvases = document.querySelectorAll('.qr-wrapper canvas');
+                if (canvases[index]) {
+                    setTimeout(() => {
+                        const link = document.createElement('a');
+                        link.download = `${currentEmployee.id}_${type.name}.png`;
+                        link.href = canvases[index].toDataURL('image/png');
+                        link.click();
+                    }, index * 300);
+                }
+            });
+        }
     </script>
 </body>
+
 </html>
