@@ -10,11 +10,16 @@ const CONFIG = {
   sheets: {
     scanner: 'Scanner',
     names: 'Adlar',
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+    report: 'REPORT',
+    idSheet: 'ID'
+
  codex/duzlt-qeydiyyat-problemini-cumj8p
     report: 'REPORT',
     idSheet: 'ID'
 
     report: 'REPORT'
+ main
  main
   },
   scannerStatus: {
@@ -30,6 +35,19 @@ function doGet(e) {
   try {
     const action = getParam_(e, 'action');
 
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+    if (action === 'login') {
+      const payload = login_(e);
+      return jsonResponse_(payload, callback);
+    }
+
+    if (action === 'checkScanStatus') {
+      const payload = checkScanStatus_(e);
+      return jsonResponse_(payload, callback);
+    }
+
+
+ main
     if (action === 'scanTicket') {
       const qrData = getParam_(e, 'qrData');
       const payload = scanTicket_(qrData);
@@ -47,9 +65,115 @@ function doGet(e) {
   }
 }
 
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+
+function login_(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const namesSheet = mustGetSheet_(ss, CONFIG.sheets.names);
+
+  const employeeId = String(getParam_(e, 'id') || getParam_(e, 'employeeId') || '').trim();
+  const pass = String(getParam_(e, 'pass') || getParam_(e, 'password') || '').trim();
+
+  if (!employeeId || !pass) {
+    return { status: 'error', message: 'ID və parol tələb olunur' };
+  }
+
+  const map = headerMap_(namesSheet);
+  const idCol = findHeaderColumn_(map, ['id', 'əməkdaş id', 'emekdas id', 'employee id']);
+  const nameCol = findHeaderColumn_(map, ['ad və soyad', 'ad soyad', 'full name', 'name']);
+  const passCol = findHeaderColumn_(map, ['parol', 'password', 'şifrə', 'sifre']);
+
+  if (!idCol) {
+    return { status: 'error', message: 'Adlar sheet-də ID sütunu tapılmadı' };
+  }
+
+  const lastRow = namesSheet.getLastRow();
+  if (lastRow < 2) return { status: 'error', message: 'İstifadəçi tapılmadı' };
+
+  const values = namesSheet.getRange(2, 1, lastRow - 1, namesSheet.getLastColumn()).getValues();
+
+  for (var i = 0; i < values.length; i++) {
+    const row = values[i];
+    const rowId = String(row[idCol - 1] || '').trim();
+    if (rowId !== employeeId) continue;
+
+    if (passCol) {
+      const rowPass = String(row[passCol - 1] || '').trim();
+      if (rowPass !== pass) {
+        return { status: 'error', message: 'Parol yanlışdır' };
+      }
+    }
+
+    const fullName = nameCol ? String(row[nameCol - 1] || '').trim() : '';
+    return {
+      status: 'success',
+      employee: {
+        id: employeeId,
+        fullName: fullName || 'İşçi'
+      }
+    };
+  }
+
+  return { status: 'error', message: 'İstifadəçi tapılmadı' };
+}
+
+function checkScanStatus_(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const scannerSheet = mustGetSheet_(ss, CONFIG.sheets.scanner);
+
+  const employeeId = String(getParam_(e, 'id') || '').trim();
+  const ticketType = String(getParam_(e, 'ticketType') || '').trim();
+  const dateStr = String(getParam_(e, 'date') || '').trim();
+
+  if (!employeeId || !ticketType || !dateStr) {
+    return { status: 'error', message: 'id, ticketType, date tələb olunur', used: false };
+  }
+
+  const map = headerMap_(scannerSheet);
+  const idCol = findHeaderColumn_(map, ['əməkdaş id', 'emekdas id', 'employee id', 'id']);
+  const typeCol = findHeaderColumn_(map, ['talon növü', 'ticket type', 'növ']);
+  const dateCol = findHeaderColumn_(map, ['tarix', 'date']);
+  const statusCol = findHeaderColumn_(map, ['status', 'vəziyyət']);
+
+  if (!idCol || !typeCol || !dateCol || !statusCol) {
+    return { status: 'error', message: 'Scanner sütunları natamamdır', used: false };
+  }
+
+  const typeMap = { breakfast: 'Səhər Yeməyi', lunch: 'Günorta Yeməyi', dinner: 'Axşam Yeməyi', dry: 'Quru Talon' };
+  const normalizedType = normalize_(typeMap[ticketType] || ticketType);
+
+  const lastRow = scannerSheet.getLastRow();
+  if (lastRow < 2) return { status: 'success', used: false };
+
+  const values = scannerSheet.getRange(2, 1, lastRow - 1, scannerSheet.getLastColumn()).getValues();
+
+  for (var i = values.length - 1; i >= 0; i--) {
+    const row = values[i];
+    const rowId = String(row[idCol - 1] || '').trim();
+    if (rowId !== employeeId) continue;
+
+    const rowDateKey = dateKey_(row[dateCol - 1]);
+    if (rowDateKey !== dateStr) continue;
+
+    const rowType = normalize_(row[typeCol - 1]);
+    const statusText = normalize_(row[statusCol - 1]);
+    const isUsedStatus = /təsdiq|tesdiq|istifadə/.test(statusText);
+
+    if (rowType === normalizedType && isUsedStatus) {
+      return { status: 'success', used: true };
+    }
+  }
+
+  return { status: 'success', used: false };
+}
+
+function submitRating_(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
 function submitRating_(e) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
  codex/duzlt-qeydiyyat-problemini-cumj8p
+ main
   const idSheet = mustGetSheet_(ss, CONFIG.sheets.idSheet);
 
   const employeeId = getParam_(e, 'employeeId') || getParam_(e, 'id');
@@ -57,6 +181,8 @@ function submitRating_(e) {
   const ratingText = (getParam_(e, 'ratingText') || getParam_(e, 'reason') || '').trim();
   const ratingStars = Number(getParam_(e, 'ratingStars') || getParam_(e, 'rating') || 0);
   const now = new Date();
+
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
 
   const scannerSheet = mustGetSheet_(ss, CONFIG.sheets.scanner);
 
@@ -68,6 +194,7 @@ function submitRating_(e) {
   const ratingStars = Number(getParam_(e, 'ratingStars') || getParam_(e, 'rating') || 0);
  main
 
+ main
   if (!employeeId) {
     return { status: 'error', message: 'employeeId boşdur' };
   }
@@ -78,7 +205,10 @@ function submitRating_(e) {
     return { status: 'error', message: 'ratingStars 1-5 arası olmalıdır' };
   }
 
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+
  codex/duzlt-qeydiyyat-problemini-cumj8p
+ main
   const map = headerMap_(idSheet);
   const idCol = findHeaderColumn_(map, ['id', 'əməkdaş id', 'emekdas id', 'employee id']);
   const nameCol = findHeaderColumn_(map, ['ad və soyad', 'ad soyad', 'full name']);
@@ -114,6 +244,8 @@ function submitRating_(e) {
   return {
     status: 'success',
     message: 'Qiymətləndirmə ID cədvəlinə əlavə edildi',
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+
 
   const map = headerMap_(scannerSheet);
   const ratingTextCol = findHeaderColumn_(map, ['yemək qiymətləndirmə', 'yemek qiymetlendirme']);
@@ -154,9 +286,14 @@ function submitRating_(e) {
     status: 'success',
     message: 'Qiymətləndirmə yeni sətrə yazıldı',
  main
+ main
     rowIndex: newRow
   };
 }
+
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+
+function findLatestRowByEmployeeInSheet_(sheet, idCol, employeeId) {
 
  codex/duzlt-qeydiyyat-problemini-cumj8p
 
@@ -164,10 +301,14 @@ function findLatestRowByEmployeeInSheet_(sheet, idCol, employeeId) {
 
 function findLatestScannerRowByEmployee_(sheet, employeeId) {
  main
+ main
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return 0;
 
   const map = headerMap_(sheet);
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+  const dateCol = findHeaderColumn_(map, ['tarix', 'date', 'qiymetlendirme tarixi', 'rating date']);
+
  codex/duzlt-qeydiyyat-problemini-cumj8p
   const dateCol = findHeaderColumn_(map, ['tarix', 'date', 'qiymetlendirme tarixi', 'rating date']);
 
@@ -175,6 +316,7 @@ function findLatestScannerRowByEmployee_(sheet, employeeId) {
   if (!idCol) return 0;
 
   const dateCol = findHeaderColumn_(map, ['tarix', 'date']);
+ main
  main
   const values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
 

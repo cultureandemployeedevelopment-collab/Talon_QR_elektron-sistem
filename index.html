@@ -358,6 +358,9 @@
 
 
 <script>
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxJPbFnffij4Z49X0kU3I4j5PghMJxbRrEx7UFcBWieAnFJN_zR4qwDnDpBTcM0D0cN/exec';
+
  codex/duzlt-qeydiyyat-problemini-cumj8p
         const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxJPbFnffij4Z49X0kU3I4j5PghMJxbRrEx7UFcBWieAnFJN_zR4qwDnDpBTcM0D0cN/exec';
 
@@ -365,6 +368,7 @@
         const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxJPbFnffij4Z49X0kU3I4j5PghMJxbRrEx7UFcBWieAnFJN_zR4qwDnDpBTcM0D0cN/exec';
 
         const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwIuxpqFpC3sd6CXOMVe2MeODp1bJ9vggfu9VbmxDXH1itIOigLO-xmptb2x5QldWoa/exec';
+ main
  main
  main
         
@@ -413,7 +417,10 @@
         // LOGIN
         // ==========================================
         function normalizeLoginResponse(data, fallbackId) {
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+
  codex/duzlt-qeydiyyat-problemini-cumj8p
+ main
             let payload = data;
 
             if (typeof payload === 'string') {
@@ -434,6 +441,8 @@
             const isSuccess = status === 'success' || status === 'ok' || payload.ok === true || payload.success === true || hasEmployeeData;
             if (!isSuccess) return null;
 
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+
             if (!data || typeof data !== 'object') return null;
 
             const status = String(data.status || data.result || '').toLowerCase();
@@ -444,6 +453,7 @@
             const employeeId = employee.id || employee.employeeId || data.id || data.employeeId || fallbackId;
             const fullName = employee.fullName || employee.name || data.fullName || data.name || 'İşçi';
 
+ main
  main
             return {
                 id: String(employeeId || fallbackId),
@@ -539,6 +549,8 @@
                 if (!res.ok) throw new Error('http-' + res.status);
                 const text = await res.text();
 
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+
                 try {
                     return JSON.parse(text);
                 } catch (err) {
@@ -559,6 +571,7 @@
         }
 
  codex/duzlt-qeydiyyat-problemini-cumj8p
+ main
         async function fetchJSON(url) {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 15000);
@@ -592,8 +605,11 @@
             }
         }
 
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
 
 
+
+ main
  main
  main
         function fetchJSONP(url) {
@@ -806,6 +822,9 @@
                 rating: String(rating),
                 ratingStars: String(rating),
                 reason,
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+                ratingText: reason,
+
  codex/duzlt-qeydiyyat-problemini-cumj8p
                 ratingText: reason,
 
@@ -818,6 +837,7 @@
                 date: dateStr
 
  main
+ main
                 mealRating: reasonWithStars,
                 mealRatingText: reasonWithStars,
                 feedback: reason,
@@ -827,10 +847,14 @@
                 column: 'Yemək Qiymətləndirmə',
                 columnName: 'Yemək Qiymətləndirmə',
                 targetColumn: 'Yemək Qiymətləndirmə',
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+                ratingColumn: 'Ulduzla qiymətləndirmə'
+
  codex/duzlt-qeydiyyat-problemini-cumj8p
                 ratingColumn: 'Ulduzla qiymətləndirmə'
 
                 ratingColumn: 'Yemək Qiymətləndirmə'
+ main
  main
  main
  main
@@ -878,6 +902,9 @@
 
                 if (success) {
                     closeRatingModal();
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+                    alert('Qiymətləndirmə ID cədvəlinə yazıldı: xal + şərh.');
+
  codex/duzlt-qeydiyyat-problemini-cumj8p
                     alert('Qiymətləndirmə ID cədvəlinə yazıldı: xal + şərh.');
 
@@ -888,6 +915,7 @@
                     alert('Qiymətləndirmə Scanner sheetinə yazıldı: mətn + ulduz.');
 
                     alert('Qiymətləndirmə ID sheetində "Yemək Qiymətləndirmə" sütununa göndərildi.');
+ main
  main
  main
  main
