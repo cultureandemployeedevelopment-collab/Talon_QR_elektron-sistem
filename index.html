@@ -358,7 +358,19 @@
 
 
 <script>
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
         const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxJPbFnffij4Z49X0kU3I4j5PghMJxbRrEx7UFcBWieAnFJN_zR4qwDnDpBTcM0D0cN/exec';
+
+ codex/duzlt-qeydiyyat-problemini-cumj8p
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxJPbFnffij4Z49X0kU3I4j5PghMJxbRrEx7UFcBWieAnFJN_zR4qwDnDpBTcM0D0cN/exec';
+
+ codex/duzlt-qeydiyyat-problemini-2s74kj
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxJPbFnffij4Z49X0kU3I4j5PghMJxbRrEx7UFcBWieAnFJN_zR4qwDnDpBTcM0D0cN/exec';
+
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwIuxpqFpC3sd6CXOMVe2MeODp1bJ9vggfu9VbmxDXH1itIOigLO-xmptb2x5QldWoa/exec';
+ main
+ main
+ main
         
         const TICKET_TYPES = [
             { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
@@ -405,6 +417,10 @@
         // LOGIN
         // ==========================================
         function normalizeLoginResponse(data, fallbackId) {
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+
+ codex/duzlt-qeydiyyat-problemini-cumj8p
+ main
             let payload = data;
 
             if (typeof payload === 'string') {
@@ -425,6 +441,20 @@
             const isSuccess = status === 'success' || status === 'ok' || payload.ok === true || payload.success === true || hasEmployeeData;
             if (!isSuccess) return null;
 
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+
+            if (!data || typeof data !== 'object') return null;
+
+            const status = String(data.status || data.result || '').toLowerCase();
+            const isSuccess = status === 'success' || status === 'ok' || data.ok === true || data.success === true;
+            if (!isSuccess) return null;
+
+            const employee = data.employee || data.user || {};
+            const employeeId = employee.id || employee.employeeId || data.id || data.employeeId || fallbackId;
+            const fullName = employee.fullName || employee.name || data.fullName || data.name || 'İşçi';
+
+ main
+ main
             return {
                 id: String(employeeId || fallbackId),
                 fullName
@@ -503,7 +533,45 @@
                 loginBtn.textContent = 'Daxil Ol';
             }
         }
+ codex/duzlt-qeydiyyat-problemini-2s74kj
 
+        async function fetchJSON(url) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15000);
+
+            try {
+                const res = await fetch(url, {
+                    method: 'GET',
+                    signal: controller.signal,
+                    headers: { 'Accept': 'application/json, text/plain, */*' }
+                });
+
+                if (!res.ok) throw new Error('http-' + res.status);
+                const text = await res.text();
+
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+
+                try {
+                    return JSON.parse(text);
+                } catch (err) {
+                    if (text && text.trim().startsWith('{')) throw err;
+                    throw new Error('non-json-response');
+                }
+            } finally {
+                clearTimeout(timeout);
+            }
+        }
+
+        async function requestAPI(url) {
+            try {
+                return await fetchJSON(url);
+            } catch (err) {
+                return fetchJSONP(url);
+            }
+        }
+
+ codex/duzlt-qeydiyyat-problemini-cumj8p
+ main
         async function fetchJSON(url) {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 15000);
@@ -537,6 +605,13 @@
             }
         }
 
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
+
+
+
+ main
+ main
+ main
         function fetchJSONP(url) {
             return new Promise((resolve, reject) => {
                 const cb = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
@@ -739,7 +814,6 @@
                 .join('&');
         }
         async function submitRatingToSheet(id, fullName, rating, reason, dateStr) {
-            const reasonWithStars = `${rating}/5 - ${reason}`;
             const query = buildQuery({
                 action: 'submitRating',
                 id,
@@ -748,7 +822,22 @@
                 rating: String(rating),
                 ratingStars: String(rating),
                 reason,
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
                 ratingText: reason,
+
+ codex/duzlt-qeydiyyat-problemini-cumj8p
+                ratingText: reason,
+
+ codex/duzlt-qeydiyyat-problemini-2s74kj
+                ratingText: reason,
+                date: dateStr
+
+ codex/duzlt-qeydiyyat-problemini-huzdw7
+                ratingText: reason,
+                date: dateStr
+
+ main
+ main
                 mealRating: reasonWithStars,
                 mealRatingText: reasonWithStars,
                 feedback: reason,
@@ -758,7 +847,17 @@
                 column: 'Yemək Qiymətləndirmə',
                 columnName: 'Yemək Qiymətləndirmə',
                 targetColumn: 'Yemək Qiymətləndirmə',
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
                 ratingColumn: 'Ulduzla qiymətləndirmə'
+
+ codex/duzlt-qeydiyyat-problemini-cumj8p
+                ratingColumn: 'Ulduzla qiymətləndirmə'
+
+                ratingColumn: 'Yemək Qiymətləndirmə'
+ main
+ main
+ main
+ main
             });
 
             const data = await fetchJSONP(`${SHEET_API_URL}?${query}`);
@@ -803,7 +902,23 @@
 
                 if (success) {
                     closeRatingModal();
+ codex/duzlt-qeydiyyat-problemini-2p8g9u
                     alert('Qiymətləndirmə ID cədvəlinə yazıldı: xal + şərh.');
+
+ codex/duzlt-qeydiyyat-problemini-cumj8p
+                    alert('Qiymətləndirmə ID cədvəlinə yazıldı: xal + şərh.');
+
+ codex/duzlt-qeydiyyat-problemini-2s74kj
+                    alert('Qiymətləndirmə Scanner sheetinə yazıldı: mətn + ulduz.');
+
+ codex/duzlt-qeydiyyat-problemini-huzdw7
+                    alert('Qiymətləndirmə Scanner sheetinə yazıldı: mətn + ulduz.');
+
+                    alert('Qiymətləndirmə ID sheetində "Yemək Qiymətləndirmə" sütununa göndərildi.');
+ main
+ main
+ main
+ main
                 } else {
                     throw new Error('submit-failed');
                 }
