@@ -21,7 +21,11 @@ function doGet(e) {
 
     return sendJSONP(result, callback);
   } catch (error) {
+ codex/fix-login-error-and-add-meal-rating-feature-whyloo
     return sendJSONP({ status: 'error', message: String(error) }, getParam(e, 'callback'));
+
+    return sendJSONP({ status: 'error', message: error.toString() }, getParam(e, 'callback'));
+ main
   }
 }
 
@@ -32,6 +36,7 @@ function doPost(e) {
 function handleLogin(e) {
   var id = getParam(e, 'id') || getParam(e, 'employeeId');
   var pass = getParam(e, 'pass') || getParam(e, 'password');
+ codex/fix-login-error-and-add-meal-rating-feature-whyloo
   if (!id || !pass) return { status: 'error', message: 'ID və parol tələb olunur' };
 
   var sheet = getEmployeesSheet();
@@ -63,6 +68,43 @@ function handleLogin(e) {
   }
 
   return { status: 'not_found', message: 'İstifadəçi tapılmadı' };
+
+
+  if (!id || !pass) {
+    return { status: 'error', message: 'ID və parol tələb olunur' };
+  }
+
+  try {
+    var sheet = getEmployeesSheet();
+    var data = sheet.getDataRange().getValues();
+    if (!data || data.length < 2) return { status: 'not_found' };
+
+    var cols = detectColumns(data[0]);
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var rowId = val(row[cols.id]);
+      if (rowId !== id) continue;
+
+      var rowPass = val(row[cols.pass]);
+      if (rowPass !== pass) {
+        return { status: 'invalid_pass', message: 'Parol yanlışdır' };
+      }
+
+      return {
+        status: 'success',
+        employee: {
+          id: id,
+          fullName: val(row[cols.name]) || 'Naməlum əməkdaş'
+        }
+      };
+    }
+
+    return { status: 'not_found', message: 'İstifadəçi tapılmadı' };
+  } catch (error) {
+    return { status: 'error', message: 'Xəta: ' + error.toString() };
+  }
+ main
 }
 
 function handleSubmitRating(e) {
@@ -71,6 +113,7 @@ function handleSubmitRating(e) {
   var ratingText = getParam(e, 'ratingText') || getParam(e, 'reason');
   var ratingStars = Number(getParam(e, 'ratingStars') || getParam(e, 'rating'));
   var dateKey = getParam(e, 'date') || todayDateKey();
+ codex/fix-login-error-and-add-meal-rating-feature-whyloo
 
   if (!employeeId) return { status: 'error', message: 'employeeId boşdur' };
   if (!ratingText) return { status: 'error', message: 'Səbəb boşdur' };
@@ -98,6 +141,61 @@ function handleSubmitRating(e) {
   setIfExists(ratingSheet, targetRow, map, ['tarix', 'date', 'datekey'], dateKey);
 
   return { status: 'success', message: 'Qiymətləndirmə əlavə edildi' };
+
+
+  if (!employeeId) return { status: 'error', message: 'employeeId boşdur' };
+  if (!ratingText) return { status: 'error', message: 'Səbəb boşdur' };
+  if (!ratingStars || ratingStars < 1 || ratingStars > 5) return { status: 'error', message: 'Ulduz 1-5 arası olmalıdır' };
+
+  try {
+    var sheet = getEmployeesSheet();
+    var data = sheet.getDataRange().getValues();
+    var cols = detectColumns(data[0]);
+
+    if (!fullName) {
+      for (var i = 1; i < data.length; i++) {
+        if (val(data[i][cols.id]) === employeeId) {
+          fullName = val(data[i][cols.name]);
+          break;
+        }
+      }
+    }
+
+    var ratingCol = findColumnByHeader(data[0], ['Yemək Qiymətləndirmə', 'Yemek Qiymetlendirme']);
+    var starsCol = findColumnByHeader(data[0], ['Ulduzla qiymətləndirmə', 'Ulduzla qiymetlendirme']);
+    var dateCol = findColumnByHeader(data[0], ['Tarix', 'Date']);
+
+    if (ratingCol === -1 || starsCol === -1) {
+      return { status: 'error', message: 'Qiymətləndirmə sütunları tapılmadı' };
+    }
+
+    var targetRow = -1;
+    for (var r = data.length - 1; r >= 1; r--) {
+      if (val(data[r][cols.id]) === employeeId) {
+        targetRow = r + 1;
+        break;
+      }
+    }
+
+    if (targetRow === -1) {
+      targetRow = sheet.getLastRow() + 1;
+      sheet.getRange(targetRow, cols.id + 1).setValue(employeeId);
+      if (cols.name >= 0 && fullName) {
+        sheet.getRange(targetRow, cols.name + 1).setValue(fullName);
+      }
+    }
+
+    sheet.getRange(targetRow, starsCol + 1).setValue(ratingStars);
+    sheet.getRange(targetRow, ratingCol + 1).setValue(ratingText);
+    if (dateCol !== -1) {
+      sheet.getRange(targetRow, dateCol + 1).setValue(dateKey);
+    }
+
+    return { status: 'success', message: 'Qiymətləndirmə əlavə edildi' };
+  } catch (error) {
+    return { status: 'error', message: 'Yazma xətası: ' + error.toString() };
+  }
+ main
 }
 
 function handleScan(qrData) {
@@ -107,7 +205,11 @@ function handleScan(qrData) {
 
   var todayKey = todayDateKey();
   if (parsed.dateKey !== todayKey) {
+ codex/fix-login-error-and-add-meal-rating-feature-whyloo
     return { status: 'error', message: 'Bu QR yalnız bu gün oxunur' };
+
+    return { status: 'error', message: 'Bu QR yalnız bugünkü tarix üçün etibarlıdır' };
+ main
   }
 
   var sheet = getScannerSheet();
@@ -122,13 +224,17 @@ function handleScan(qrData) {
   }
 
   var now = new Date();
+ codex/fix-login-error-and-add-meal-rating-feature-whyloo
   var statusText = duplicate ? 'Təkrar cəhd' : 'Təsdiqləndi';
 
+
+ main
   sheet.appendRow([
     Utilities.formatDate(now, 'Asia/Baku', 'dd.MM.yyyy'),
     Utilities.formatDate(now, 'Asia/Baku', 'HH:mm:ss'),
     parsed.dateKey,
     parsed.empId,
+ codex/fix-login-error-and-add-meal-rating-feature-whyloo
     getEmployeeById(getEmployeesSheet(), parsed.empId).fullName || 'Naməlum əməkdaş',
     typeName(parsed.typeCode),
     parsed.typeId,
@@ -275,6 +381,108 @@ function typeName(code) {
   return map[code] || 'Naməlum';
 }
 
+
+    findEmployeeName(parsed.empId),
+    typeName(parsed.typeCode),
+    parsed.typeId,
+    qrData,
+    duplicate ? 'Təkrar skan' : 'Təsdiqləndi'
+  ]);
+
+  if (duplicate) {
+    return { status: 'warning', message: 'Bu talon artıq istifadə edilib' };
+  }
+
+  return { status: 'success', message: 'Təsdiqləndi' };
+}
+
+function handleCheckScanStatus(e) {
+  var empId = getParam(e, 'id');
+  var ticketType = getParam(e, 'ticketType');
+  var dateKey = getParam(e, 'date') || todayDateKey();
+
+  if (!empId || !ticketType) {
+    return { status: 'error', used: false, message: 'Parametrlər natamamdır' };
+  }
+
+  var sheet = getScannerSheet();
+  var data = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    if (val(data[i][2]) === dateKey && val(data[i][3]) === empId && val(data[i][6]) === ticketType && val(data[i][8]) === 'Təsdiqləndi') {
+      return { status: 'success', used: true };
+    }
+  }
+
+  return { status: 'success', used: false };
+}
+
+function parseQR(qrData) {
+  var parts = String(qrData || '').split('|');
+  if (parts.length < 6 || parts[0] !== 'GHG') return null;
+  return {
+    empId: val(parts[1]),
+    typeCode: val(parts[2]),
+    dateKey: val(parts[3]),
+    hash: val(parts[4]),
+    typeId: val(parts[5])
+  };
+}
+
+function typeName(code) {
+  var map = { S: 'Səhər Yeməyi', G: 'Günorta Yeməyi', A: 'Axşam Yeməyi', Q: 'Quru Talon' };
+  return map[code] || 'Naməlum';
+}
+
+function findEmployeeName(empId) {
+  var sheet = getEmployeesSheet();
+  var data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) return 'Naməlum əməkdaş';
+
+  var cols = detectColumns(data[0]);
+  for (var i = 1; i < data.length; i++) {
+    if (val(data[i][cols.id]) === empId) {
+      return val(data[i][cols.name]) || 'Naməlum əməkdaş';
+    }
+  }
+
+  return 'Naməlum əməkdaş';
+}
+
+function getEmployeesSheet() {
+  var ss = SpreadsheetApp.openById(EMPLOYEES_FILE_ID);
+  return ss.getSheetByName('Cadvel1') || ss.getSheets()[0];
+}
+
+function getScannerSheet() {
+  var ss = SpreadsheetApp.openById(SCANNER_FILE_ID);
+  var sheet = ss.getSheetByName('Scanner');
+  if (!sheet) {
+    sheet = ss.insertSheet('Scanner');
+    sheet.appendRow(['Tarix', 'Saat', 'DateKey', 'Əməkdaş ID', 'Ad Soyad', 'Talon Növü', 'TicketTypeId', 'Talon ID', 'Status']);
+  }
+  return sheet;
+}
+
+function detectColumns(headerRow) {
+  return {
+    id: findColumnByHeader(headerRow, ['ID', 'İD']),
+    name: findColumnByHeader(headerRow, ['Ad və Soyad', 'Ad Soyad', 'Ad']),
+    pass: findColumnByHeader(headerRow, ['Parol', 'Password'])
+  };
+}
+
+function findColumnByHeader(headerRow, aliases) {
+  for (var i = 0; i < headerRow.length; i++) {
+    var h = normalize(val(headerRow[i]));
+    for (var j = 0; j < aliases.length; j++) {
+      if (h === normalize(aliases[j])) return i;
+    }
+  }
+  return -1;
+}
+
+ main
 function normalize(t) {
   return String(t || '')
     .toLowerCase()
@@ -284,12 +492,16 @@ function normalize(t) {
     .replace(/ü/g, 'u')
     .replace(/ş/g, 's')
     .replace(/ç/g, 'c')
+ codex/fix-login-error-and-add-meal-rating-feature-whyloo
     .replace(/ğ/g, 'g')
+
+ main
     .trim();
 }
 
 function todayDateKey() {
   return Utilities.formatDate(new Date(), 'Asia/Baku', 'yyyyMMdd');
+ codex/fix-login-error-and-add-meal-rating-feature-whyloo
 }
 
 function getParam(e, key) {
@@ -307,4 +519,27 @@ function sendJSONP(data, callback) {
     return ContentService.createTextOutput(callback + '(' + json + ')').setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
   return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+
+}
+
+function getParam(e, key) {
+  if (!e || !e.parameter || typeof e.parameter[key] === 'undefined' || e.parameter[key] === null) {
+    return '';
+  }
+  return String(e.parameter[key]).trim();
+}
+
+function val(v) {
+  return String(v || '').trim();
+}
+
+function sendJSONP(data, callback) {
+  var json = JSON.stringify(data);
+  if (callback) {
+    return ContentService.createTextOutput(callback + '(' + json + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
+ main
 }
