@@ -56,6 +56,10 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
         .main-app { display: none; }
         .header {
             text-align: center;
@@ -183,6 +187,77 @@
             margin-bottom: 15px;
             font-size: 0.9em;
         }
+        .rating-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .rating-btn {
+            max-width: 420px;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #ff6f00 0%, #ff3d00 100%);
+            box-shadow: 0 8px 20px rgba(255, 87, 34, 0.35);
+            cursor: pointer;
+        }
+        .rating-btn:hover {
+            transform: translateY(-2px);
+        }
+        .rating-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 1100;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .rating-modal-content {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 18px;
+            padding: 24px;
+        }
+        .stars {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 14px 0;
+        }
+        .star {
+            font-size: 34px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #cfd8dc;
+        }
+        .star.active {
+            color: #ffb300;
+        }
+        .rating-modal textarea {
+            width: 100%;
+            min-height: 110px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 15px;
+            resize: vertical;
+            margin-top: 8px;
+        }
+        .rating-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
     </style>
 </head>
 <body>
@@ -224,9 +299,12 @@
                 <div class="date-info" id="dateInfo"></div>
                 <div class="info-box">
                     <strong>⚠️ Gündə yalnız 1 talon!</strong><br>
-                    Seçdiyiniz talonu skan etdikdən sonra digərləri deaktiv olacaq.
+                    Seçdiyiniz talonu skan etdikdən sonra digərləri deaktiv olacaq. QR kodda bugünün tarixi olur və yalnız bu gün etibarlıdır.
                 </div>
                 <div id="ticketContainer" class="ticket-grid"></div>
+                <div class="rating-section">
+                    <button class="rating-btn" onclick="openRatingModal()">⭐ Əlavə yeməyi qiymətləndir</button>
+                </div>
             </div>
         </div>
     </div>
@@ -237,8 +315,25 @@
             <h2>🎫 Talonunuz Hazırdır</h2>
             <p id="qrTicketInfo" style="margin: 10px 0; color: #666;"></p>
             <div class="qr-big" id="modalQR"></div>
+            <p id="qrValidityInfo" style="color: #d84315; font-size: 0.95em; font-weight: 700;"></p>
             <p style="color: #666; font-size: 0.9em;">Bu kodu kafedəki skanerə göstərin</p>
             <button class="btn-close" onclick="closeModal()">Bağla</button>
+        </div>
+    </div>
+
+    <!-- RATING MODAL -->
+    <div class="rating-modal" id="ratingModal" onclick="closeRatingModal(event)">
+        <div class="rating-modal-content" onclick="event.stopPropagation()">
+            <h2>🍴 Əlavə yeməyi qiymətləndirin</h2>
+            <p style="color: #666; margin-top: 8px;">5 ulduz üzərindən qiymət verin və səbəbini yazın.</p>
+            <div class="stars" id="starsContainer"></div>
+            <label for="ratingReason" style="display:block; font-weight:600; color:#333; margin-top:10px;">Səbəb</label>
+            <textarea id="ratingReason" placeholder="Məsələn: yeməyin keyfiyyəti, dadı, xidməti və s."></textarea>
+            <div id="ratingError" style="color: #d32f2f; margin-top: 10px; display: none;"></div>
+            <div class="rating-actions">
+                <button class="btn" id="submitRatingBtn" onclick="submitRating()">Qiyməti göndər</button>
+                <button class="btn-close" style="margin-top: 0;" onclick="closeRatingModal()">Bağla</button>
+            </div>
         </div>
     </div>
 
@@ -256,6 +351,7 @@
         let todayStr = '';
         let usedTicket = null;
         let scanPollInterval = null;
+        let selectedRating = 0;
         const LOGIN_CREDENTIALS_KEY = 'ghg_login_credentials';
 
         // ==========================================
@@ -416,6 +512,8 @@
         function showTicket(type) {
             // Hər gün yeni QR kod yarat
             const qrData = generateDailyQR(type);
+            const validDate = new Date();
+            const validDateLabel = validDate.toLocaleDateString('az-AZ');
             
             document.getElementById('qrTicketInfo').textContent = 
                 `${currentEmployee.fullName} | ${type.name}`;
@@ -432,6 +530,8 @@
 
             document.getElementById('qrTicketInfo').textContent =
                 `${currentEmployee.fullName} | ${type.name} | Skan gözlənilir...`;
+            document.getElementById('qrValidityInfo').textContent =
+                `📅 Etibarlılıq: yalnız ${validDateLabel}`;
             
             document.getElementById('qrModal').style.display = 'flex';
 
@@ -486,6 +586,141 @@
         function logout() {
             localStorage.removeItem('ghg_employee');
             location.reload();
+        }
+
+        function openRatingModal() {
+            selectedRating = 0;
+            document.getElementById('ratingReason').value = '';
+            document.getElementById('ratingError').style.display = 'none';
+            renderStars();
+            document.getElementById('ratingModal').style.display = 'flex';
+        }
+
+        function closeRatingModal(e) {
+            if (!e || e.target.id === 'ratingModal') {
+                document.getElementById('ratingModal').style.display = 'none';
+            }
+        }
+
+        function renderStars() {
+            const container = document.getElementById('starsContainer');
+            container.innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                const starBtn = document.createElement('button');
+                starBtn.type = 'button';
+                starBtn.className = `star ${i <= selectedRating ? 'active' : ''}`;
+                starBtn.innerHTML = '★';
+                starBtn.onclick = () => {
+                    selectedRating = i;
+                    renderStars();
+                };
+                container.appendChild(starBtn);
+            }
+        }
+
+        async function submitRatingToSheet(id, fullName, rating, reason, dateStr) {
+            const reasonWithStars = `${rating}/5 - ${reason}`;
+            const payload = [
+                {
+                    action: 'submitRating',
+                    sheet: 'ID',
+                    sheetName: 'ID',
+                    column: 'yemək qiymətləndir',
+                    columnName: 'yemək qiymətləndir'
+                },
+                {
+                    action: 'submitMealRating',
+                    sheet: 'ID',
+                    sheetName: 'ID',
+                    column: 'yemək qiymətləndir',
+                    columnName: 'yemək qiymətləndir'
+                },
+                {
+                    action: 'updateEmployeeRating',
+                    sheet: 'ID',
+                    sheetName: 'ID',
+                    column: 'yemək qiymətləndir',
+                    columnName: 'yemək qiymətləndir'
+                }
+            ];
+
+            for (const option of payload) {
+                const params = new URLSearchParams({
+                    action: option.action,
+                    id,
+                    employeeId: id,
+                    fullName,
+                    rating: String(rating),
+                    reason,
+                    mealRating: reasonWithStars,
+                    mealRatingText: reasonWithStars,
+                    feedback: reason,
+                    date: dateStr,
+                    sheet: option.sheet,
+                    sheetName: option.sheetName,
+                    column: option.column,
+                    columnName: option.columnName
+                });
+
+                const data = await fetchJSONP(`${SHEET_API_URL}?${params.toString()}`);
+                if (data && (data.status === 'success' || data.result === 'success' || data.ok === true)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        async function submitRating() {
+            const reason = document.getElementById('ratingReason').value.trim();
+            const errorEl = document.getElementById('ratingError');
+            const submitBtn = document.getElementById('submitRatingBtn');
+
+            if (!currentEmployee) {
+                errorEl.textContent = 'Əvvəlcə sistemə daxil olun.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            if (selectedRating < 1 || selectedRating > 5) {
+                errorEl.textContent = 'Zəhmət olmasa ulduz seçin (1-5).';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            if (!reason) {
+                errorEl.textContent = 'Səbəbi yazın ki, sheet-də görünsün.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            errorEl.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Göndərilir...';
+
+            try {
+                const dateStr = getTodayString();
+                const success = await submitRatingToSheet(
+                    currentEmployee.id,
+                    currentEmployee.fullName,
+                    selectedRating,
+                    reason,
+                    dateStr
+                );
+
+                if (success) {
+                    closeRatingModal();
+                    alert('Qiymətləndirmə ID sheetində "yemək qiymətləndir" sütununa göndərildi.');
+                } else {
+                    throw new Error('submit-failed');
+                }
+            } catch (err) {
+                errorEl.textContent = 'Göndərmə zamanı xəta baş verdi. Yenidən cəhd edin.';
+                errorEl.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Qiyməti göndər';
+            }
         }
 
         // ==========================================
