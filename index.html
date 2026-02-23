@@ -695,8 +695,21 @@
                 rating: String(rating),
                 ratingStars: String(rating),
                 reason,
+ codex/duzlt-qeydiyyat-problemini-huzdw7
                 ratingText: reason,
                 date: dateStr
+
+                mealRating: reasonWithStars,
+                mealRatingText: reasonWithStars,
+                feedback: reason,
+                date: dateStr,
+                sheet: 'ID',
+                sheetName: 'ID',
+                column: 'Yemək Qiymətləndirmə',
+                columnName: 'Yemək Qiymətləndirmə',
+                targetColumn: 'Yemək Qiymətləndirmə',
+                ratingColumn: 'Yemək Qiymətləndirmə'
+ main
             });
 
             const data = await fetchJSONP(`${SHEET_API_URL}?${query}`);
@@ -741,7 +754,11 @@
 
                 if (success) {
                     closeRatingModal();
+ codex/duzlt-qeydiyyat-problemini-huzdw7
                     alert('Qiymətləndirmə Scanner sheetinə yazıldı: mətn + ulduz.');
+
+                    alert('Qiymətləndirmə ID sheetində "Yemək Qiymətləndirmə" sütununa göndərildi.');
+ main
                 } else {
                     throw new Error('submit-failed');
                 }
