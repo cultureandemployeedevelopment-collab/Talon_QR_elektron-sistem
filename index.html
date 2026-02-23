@@ -239,34 +239,9 @@
 
         .secondary-btn {
             margin-top: 12px;
-codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
-
- codex/fix-login-error-and-add-meal-rating-feature-3yt5ao
- main
-            background: linear-gradient(135deg, #ff9800 0%, #ff3d00 100%);
-            color: #fff;
-            border: 2px solid #ffb74d;
-            box-shadow: 0 8px 22px rgba(255, 87, 34, 0.45);
-            animation: glowPulse 1.8s infinite;
-        }
-
-        .secondary-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 26px rgba(255, 87, 34, 0.55);
-        }
-
-        @keyframes glowPulse {
-            0% { box-shadow: 0 6px 18px rgba(255, 87, 34, 0.35); }
-            50% { box-shadow: 0 10px 28px rgba(255, 87, 34, 0.65); }
-            100% { box-shadow: 0 6px 18px rgba(255, 87, 34, 0.35); }
- codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
-
-
             background: #fff;
             color: #5b54c6;
             border: 2px solid #667eea;
- main
- main
         }
 
         .rating-stars {
@@ -358,15 +333,7 @@ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
             <div class="section">
                 <h3 style="margin-bottom: 10px; color: #2d2d2d;">🍽️ Yemək qiymətləndirmə</h3>
                 <p style="color: #666; font-size: 0.95em;">Yeməyi 5 bal üzərindən qiymətləndirib səbəbini yaza bilərsiniz.</p>
- codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
-                <button class="btn secondary-btn" onclick="openRatingModal()">⭐ Yemək Qiymətləndir</button>
-
- codex/fix-login-error-and-add-meal-rating-feature-3yt5ao
-                <button class="btn secondary-btn" onclick="openRatingModal()">⭐ Yemək Qiymətləndir</button>
-
                 <button class="btn secondary-btn" onclick="openRatingModal()">Yemək Qiymətləndir</button>
- main
- main
             </div>
 
             <div class="footer-sign">by CED</div>
@@ -402,7 +369,7 @@ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
         // ==========================================
         // KONFİQURASİYA - EMPLOYEES FAYLININ URL-si
         // ==========================================
-        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxbMP9KLYWuYlwkcY_V6F3sNan8Ldr2XhcEDlUwq36VUSf7GJYJCv-AwQMKLtJMt98d/exec';
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwWg9ai63iwvV61Z5DM2y1IeYhHmOoIXPSu7NWoCzjHl-ULnCFBMGtCu6nVNRx-XzM7/exec';
         
         const TICKET_TYPES = [
             { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
@@ -413,16 +380,7 @@ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
 
         let currentEmployee = null;
         let todayStr = '';
- codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
-
- codex/fix-login-error-and-add-meal-rating-feature-3yt5ao
-
- codex/fix-login-error-and-add-meal-rating-feature-whyloo
-
         let usedTicket = null;
- main
- main
- main
         let selectedRating = 0;
 
         // ==========================================
@@ -468,9 +426,9 @@ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
                     delete window[cb];
                     script.remove();
                     reject(new Error('Timeout'));
-                }, 4000);
+                }, 10000);
                 
-                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
+                script.src = url + '&callback=' + cb;
                 document.head.appendChild(script);
             });
         }
@@ -485,11 +443,7 @@ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
             const btn = document.getElementById('loginBtn');
             
             btn.disabled = true;
-            btn.textContent = '⏳ Yoxlanılır...';
-            document.getElementById('errorMsg').style.display = 'none';
-
-            // UI dərhal yenilənsin ki, istifadəçi "Yoxlanılır..." mətnini görsün
-            await new Promise(resolve => setTimeout(resolve, 60));
+            btn.textContent = 'Yoxlanılır...';
             
             try {
                 const data = await fetchJSONP(`${SHEET_API_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}`);
@@ -501,7 +455,15 @@ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
                     };
                     
                     todayStr = getTodayString();
-                    localStorage.setItem(`ghg_date_${id}`, todayStr);
+                    const savedDate = localStorage.getItem(`ghg_date_${id}`);
+                    
+                    if (savedDate !== todayStr) {
+                        localStorage.setItem(`ghg_date_${id}`, todayStr);
+                        localStorage.removeItem(`ghg_used_${id}`);
+                        usedTicket = null;
+                    } else {
+                        usedTicket = localStorage.getItem(`ghg_used_${id}`);
+                    }
                     
                     localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
                     localStorage.setItem('ghg_login_id', id);
@@ -547,15 +509,26 @@ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
             container.innerHTML = '';
             
             TICKET_TYPES.forEach(type => {
+                const isUsed = usedTicket === type.id;
+                const isDisabled = usedTicket && usedTicket !== type.id;
+                
                 const card = document.createElement('div');
-                card.className = 'ticket-card';
-                card.onclick = () => showTicket(type);
+                card.className = `ticket-card ${isUsed ? 'used' : ''} ${isDisabled ? 'disabled' : ''}`;
+                
+                if (!isUsed && !isDisabled) {
+                    card.onclick = () => showTicket(type);
+                }
+                
+                let statusText = '';
+                if (isUsed) statusText = '<span class="ticket-status status-used">İSTİFADƏ EDİLDİ</span>';
+                else if (isDisabled) statusText = '<span class="ticket-status status-disabled">DEAKTIV</span>';
+                else statusText = '<span class="ticket-status status-active">AKTIV</span>';
                 
                 card.innerHTML = `
                     <div class="ticket-icon">${type.icon}</div>
                     <div class="ticket-name">${type.name}</div>
                     <div class="ticket-time">${type.time}</div>
-                    <span class="ticket-status status-active">AKTIV</span>
+                    ${statusText}
                 `;
                 
                 container.appendChild(card);
@@ -579,7 +552,17 @@ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
             });
             
             document.getElementById('qrModal').style.display = 'flex';
+            
+            // 5 saniyə sonra istifadə edilmiş kimi işarələ (demo)
+            setTimeout(() => {
+                markUsed(type.id);
+            }, 5000);
+        }
 
+        function markUsed(ticketId) {
+            usedTicket = ticketId;
+            localStorage.setItem(`ghg_used_${currentEmployee.id}`, ticketId);
+            renderTickets();
         }
 
         function closeModal(e) {
@@ -678,6 +661,11 @@ codex/fix-login-error-and-add-meal-rating-feature-sb7hk8
                 document.getElementById('employeeId').value = currentEmployee.id;
                 
                 todayStr = getTodayString();
+                const savedDate = localStorage.getItem(`ghg_date_${currentEmployee.id}`);
+                
+                if (savedDate === todayStr) {
+                    usedTicket = localStorage.getItem(`ghg_used_${currentEmployee.id}`);
+                }
                 
                 document.getElementById('loginPage').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
