@@ -618,6 +618,7 @@
             }
         }
 
+ codex/add-daily-unique-qr-code-with-rating-feature-g2m64h
         async function submitRatingToSheet(id, fullName, rating, reason, dateStr) {
             const reasonWithStars = `${rating}/5 - ${reason}`;
             const payload = [
@@ -671,6 +672,7 @@
             return false;
         }
 
+ main
         async function submitRating() {
             const reason = document.getElementById('ratingReason').value.trim();
             const errorEl = document.getElementById('ratingError');
@@ -700,6 +702,7 @@
 
             try {
                 const dateStr = getTodayString();
+codex/add-daily-unique-qr-code-with-rating-feature-g2m64h
                 const success = await submitRatingToSheet(
                     currentEmployee.id,
                     currentEmployee.fullName,
@@ -711,6 +714,14 @@
                 if (success) {
                     closeRatingModal();
                     alert('Qiymətləndirmə ID sheetində "yemək qiymətləndir" sütununa göndərildi.');
+
+                const url = `${SHEET_API_URL}?action=submitRating&id=${encodeURIComponent(currentEmployee.id)}&fullName=${encodeURIComponent(currentEmployee.fullName)}&rating=${selectedRating}&reason=${encodeURIComponent(reason)}&date=${dateStr}`;
+                const data = await fetchJSONP(url);
+
+                if (data && data.status === 'success') {
+                    closeRatingModal();
+                    alert('Qiymətləndirmə uğurla göndərildi. Sheet-də sizin sətrinizdə görünəcək.');
+ main
                 } else {
                     throw new Error('submit-failed');
                 }
