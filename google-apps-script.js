@@ -1,145 +1,249 @@
- codex/fix-scanner-and-qr-code-updates-o8nd5s
-const EMPLOYEES_FILE_ID = '1tJ_U_EtSF7YCjGahjKYn-w_TDgCuaPZL_tGMJ0ZFOdM';
-const SCANNER_FILE_ID = '-1RAGc0WsyXO6A7fjyad_nJDiLqM22eYREccJdjie3TMw';
-/**
- * GHG QR Scanner backend (Google Apps Script)
- */
-
-const CONFIG = {
-  sheets: {
-    scanner: 'Scanner',
-    names: 'Adlar',
-    report: 'REPORT',
-    rating: 'Yemək qiymətləndirməsi',
-    idSheet: 'ID'
-  },
-  scannerStatus: {
-    success: 'Təsdiqləndi',
-    duplicate: 'Təkrar cəhd',
-    error: 'Xəta'
-  }
-};
- main
+var EMPLOYEES_FILE_ID = '1tJ_U_EtSF7YCjGahjKYn-w_TDgCuaPZL_tGMJ0ZFOdM';
+var SCANNER_FILE_ID = '-1RAGc0WsyXO6A7fjyad_nJDiLqM22eYREccJdjie3TMw';
 
 function doGet(e) {
+  var callback = getParam_(e, 'callback');
   try {
-    var action = (e && e.parameter && e.parameter.action ? e.parameter.action : '').trim();
-    var callback = e && e.parameter ? e.parameter.callback : null;
+    var action = getParam_(e, 'action');
     var result;
 
     if (action === 'login') {
- codex/fix-scanner-and-qr-code-updates-o8nd5s
-      result = handleLogin(e);
+      result = handleLogin_(e);
     } else if (action === 'scanTicket') {
-      result = handleScan(e.parameter.qrData);
+      result = handleScan_(getParam_(e, 'qrData'));
     } else if (action === 'checkScanStatus') {
-      result = handleCheckScanStatus(e);
+      result = handleCheckScanStatus_(e);
     } else if (action === 'submitRating') {
-      result = handleSubmitRating(e);
-    } else if (action === 'getScannedNames') {
-      result = handleGetScannedNames(e);
+      result = handleSubmitRating_(e);
     } else {
       result = { status: 'error', message: 'Naməlum əməliyyat' };
     }
 
-    return sendJSONP(result, callback);
-  } catch (error) {
-    return sendJSONP({ status: 'error', message: error.toString() }, e && e.parameter ? e.parameter.callback : null);
+    return sendJSONP_(result, callback);
+  } catch (err) {
+    return sendJSONP_({ status: 'error', message: String(err) }, callback);
   }
 }
 
 function doPost(e) {
   return doGet(e);
-
-      return jsonResponse_(login_(e), callback);
-    }
-
-    if (action === 'checkScanStatus') {
-      return jsonResponse_(checkScanStatus_(e), callback);
-    }
-
-    if (action === 'scanTicket') {
-      return jsonResponse_(scanTicket_(getParam_(e, 'qrData')), callback);
-    }
-
-    if (action === 'submitRating') {
-      return jsonResponse_(submitRating_(e), callback);
-    }
-
-    if (action === 'getScannedNames') {
-      return jsonResponse_(getScannedNames_(e), callback);
-    }
-
-    return jsonResponse_({ status: 'error', message: 'Unknown action' }, callback);
-  } catch (err) {
-    return jsonResponse_({ status: 'error', message: err.message }, callback);
-  }
 }
 
-function login_(e) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const namesSheet = mustGetSheet_(ss, CONFIG.sheets.names);
+function handleLogin_(e) {
+  var id = getParam_(e, 'id') || getParam_(e, 'employeeId');
+  var pass = getParam_(e, 'pass') || getParam_(e, 'password');
 
-  const employeeId = String(getParam_(e, 'id') || getParam_(e, 'employeeId') || '').trim();
-  const pass = String(getParam_(e, 'pass') || getParam_(e, 'password') || '').trim();
-
-  if (!employeeId || !pass) {
+  if (!id || !pass) {
     return { status: 'error', message: 'ID və parol tələb olunur' };
   }
 
-  const map = headerMap_(namesSheet);
-  const idCol = findHeaderColumn_(map, ['id', 'əməkdaş id', 'emekdas id', 'employee id']);
-  const nameCol = findHeaderColumn_(map, ['ad və soyad', 'ad soyad', 'full name', 'name']);
-  const passCol = findHeaderColumn_(map, ['parol', 'password', 'şifrə', 'sifre']);
+  var sheet = getEmployeesSheet_();
+  var data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) {
+    return { status: 'not_found', message: 'İstifadəçi tapılmadı' };
+  }
 
-  if (!idCol) return { status: 'error', message: 'Adlar sheet-də ID sütunu tapılmadı' };
+  var cols = detectColumns_(data[0]);
+  if (cols.id < 0) {
+    return { status: 'error', message: 'ID sütunu tapılmadı' };
+  }
 
-  const lastRow = namesSheet.getLastRow();
-  if (lastRow < 2) return { status: 'error', message: 'İstifadəçi tapılmadı' };
-
-  const values = namesSheet.getRange(2, 1, lastRow - 1, namesSheet.getLastColumn()).getValues();
-
-  for (var i = 0; i < values.length; i++) {
-    const row = values[i];
-    if (String(row[idCol - 1] || '').trim() !== employeeId) continue;
-
-    if (passCol) {
-      const rowPass = String(row[passCol - 1] || '').trim();
-      if (rowPass !== pass) {
-        return { status: 'error', message: 'Parol yanlışdır' };
-      }
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (toText_(row[cols.id]) !== id) {
+      continue;
     }
+
+    if (cols.pass >= 0 && toText_(row[cols.pass]) !== pass) {
+      return { status: 'invalid_pass', message: 'Parol yanlışdır' };
+    }
+
+    var fullName = cols.name >= 0 ? toText_(row[cols.name]) : '';
+    var firstName = cols.firstName >= 0 ? toText_(row[cols.firstName]) : '';
+    var lastName = cols.lastName >= 0 ? toText_(row[cols.lastName]) : '';
+    var fatherName = cols.fatherName >= 0 ? toText_(row[cols.fatherName]) : '';
 
     return {
       status: 'success',
       employee: {
-        id: employeeId,
-        fullName: nameCol ? String(row[nameCol - 1] || '').trim() : 'İşçi'
+        id: id,
+        fullName: fullName,
+        firstName: firstName,
+        lastName: lastName,
+        fatherName: fatherName
       }
     };
   }
 
-  return { status: 'error', message: 'İstifadəçi tapılmadı' };
- main
+  return { status: 'not_found', message: 'İstifadəçi tapılmadı' };
 }
 
-function sendJSONP(data, callback) {
-  var json = JSON.stringify(data);
-  if (callback) {
-    return ContentService.createTextOutput(callback + '(' + json + ')')
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+function handleSubmitRating_(e) {
+  var employeeId = getParam_(e, 'employeeId') || getParam_(e, 'id');
+  var fullName = getParam_(e, 'fullName');
+  var ratingText = getParam_(e, 'ratingText') || getParam_(e, 'reason');
+  var ratingStars = Number(getParam_(e, 'ratingStars') || getParam_(e, 'rating'));
+  var dateKey = getParam_(e, 'date') || todayDateKey_();
+
+  if (!employeeId) {
+    return { status: 'error', message: 'employeeId boşdur' };
   }
-  return ContentService.createTextOutput(json)
-    .setMimeType(ContentService.MimeType.JSON);
+  if (!ratingText) {
+    return { status: 'error', message: 'Səbəb boşdur' };
+  }
+  if (!ratingStars || ratingStars < 1 || ratingStars > 5) {
+    return { status: 'error', message: 'Ulduz 1-5 arası olmalıdır' };
+  }
+
+  var employeesSheet = getEmployeesSheet_();
+  var employeeData = findEmployeeById_(employeesSheet, employeeId);
+  if (!fullName) {
+    fullName = employeeData.fullName;
+  }
+
+  var ratingSheet = getOrCreateRatingSheet_(employeesSheet.getParent());
+  ensureRatingHeaders_(ratingSheet);
+
+  var headers = ratingSheet.getRange(1, 1, 1, Math.max(1, ratingSheet.getLastColumn())).getValues()[0];
+  var map = headerMap_(headers);
+  var row = ratingSheet.getLastRow() + 1;
+
+  writeByAliases_(ratingSheet, row, map, ['id', 'i̇d', 'əməkdaş id', 'employee id'], employeeId);
+  writeByAliases_(ratingSheet, row, map, ['ad və soyad', 'ad soyad', 'full name'], fullName || employeeData.fullName);
+  writeByAliases_(ratingSheet, row, map, ['ad', 'first name'], employeeData.firstName);
+  writeByAliases_(ratingSheet, row, map, ['soyad', 'last name'], employeeData.lastName);
+  writeByAliases_(ratingSheet, row, map, ['ata adı', 'ata adi', 'father name'], employeeData.fatherName);
+  writeByAliases_(ratingSheet, row, map, ['ulduzla qiymətləndirmə', 'ulduzla qiymetlendirme', 'ulduz'], ratingStars);
+  writeByAliases_(ratingSheet, row, map, ['yemək qiymətləndirmə', 'yemek qiymetlendirme', 'qiymətləndirmə mətni'], ratingText);
+  writeByAliases_(ratingSheet, row, map, ['tarix', 'date', 'datekey'], dateKey);
+
+  return { status: 'success', message: 'Qiymətləndirmə əlavə edildi' };
 }
 
-function getEmployeesSheet() {
-  var ss = SpreadsheetApp.openById(EMPLOYEES_FILE_ID);
-  return ss.getSheetByName('Cadvel1') || ss.getSheets()[0];
+function handleScan_(qrData) {
+  if (!qrData) {
+    return { status: 'error', message: 'QR data boşdur' };
+  }
+
+  var parsed = parseQR_(qrData);
+  if (!parsed) {
+    return { status: 'error', message: 'Yanlış QR formatı' };
+  }
+
+  if (parsed.dateKey !== todayDateKey_()) {
+    return { status: 'error', message: 'Bu QR yalnız bu gün etibarlıdır' };
+  }
+
+  var scannerSheet = getScannerSheet_();
+  var rows = scannerSheet.getDataRange().getValues();
+  var duplicate = false;
+
+  for (var i = 1; i < rows.length; i++) {
+    if (
+      toText_(rows[i][2]) === parsed.dateKey &&
+      toText_(rows[i][3]) === parsed.empId &&
+      toText_(rows[i][6]) === parsed.typeId &&
+      toText_(rows[i][8]) === 'Təsdiqləndi'
+    ) {
+      duplicate = true;
+      break;
+    }
+  }
+
+  var now = new Date();
+  var statusText = duplicate ? 'Təkrar cəhd' : 'Təsdiqləndi';
+  var employee = findEmployeeById_(getEmployeesSheet_(), parsed.empId);
+
+  scannerSheet.appendRow([
+    Utilities.formatDate(now, 'Asia/Baku', 'dd.MM.yyyy'),
+    Utilities.formatDate(now, 'Asia/Baku', 'HH:mm:ss'),
+    parsed.dateKey,
+    parsed.empId,
+    employee.fullName || 'Naməlum əməkdaş',
+    ticketTypeName_(parsed.typeCode),
+    parsed.typeId,
+    qrData,
+    statusText
+  ]);
+
+  if (duplicate) {
+    return { status: 'warning', message: 'Təkrar cəhd' };
+  }
+  return { status: 'success', message: 'Təsdiqləndi' };
 }
 
-function getScannerSheet() {
-  var ss = SpreadsheetApp.openById(SCANNER_FILE_ID);
+function handleCheckScanStatus_(e) {
+  var empId = getParam_(e, 'id');
+  var ticketType = getParam_(e, 'ticketType');
+  var dateKey = getParam_(e, 'date') || todayDateKey_();
+
+  if (!empId || !ticketType) {
+    return { status: 'error', used: false, message: 'Parametrlər natamamdır' };
+  }
+
+  var scannerSheet = getScannerSheet_();
+  var rows = scannerSheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    if (
+      toText_(rows[i][2]) === dateKey &&
+      toText_(rows[i][3]) === empId &&
+      toText_(rows[i][6]) === ticketType &&
+      toText_(rows[i][8]) === 'Təsdiqləndi'
+    ) {
+      return { status: 'success', used: true };
+    }
+  }
+
+  return { status: 'success', used: false };
+}
+
+function parseQR_(qrData) {
+  var parts = String(qrData || '').split('|');
+  if (parts.length < 6 || parts[0] !== 'GHG') {
+    return null;
+  }
+
+  return {
+    empId: toText_(parts[1]),
+    typeCode: toText_(parts[2]),
+    dateKey: toText_(parts[3]),
+    hash: toText_(parts[4]),
+    typeId: toText_(parts[5])
+  };
+}
+
+function getEmployeesSpreadsheet_() {
+  try {
+    return SpreadsheetApp.openById(EMPLOYEES_FILE_ID);
+  } catch (e) {
+    return SpreadsheetApp.getActiveSpreadsheet();
+  }
+}
+
+function getScannerSpreadsheet_() {
+  try {
+    return SpreadsheetApp.openById(SCANNER_FILE_ID);
+  } catch (e) {
+    return SpreadsheetApp.getActiveSpreadsheet();
+  }
+}
+
+function getEmployeesSheet_() {
+  var ss = getEmployeesSpreadsheet_();
+  return ss.getSheetByName('Cadvel1') || ss.getSheetByName('Cədvəl1') || ss.getSheets()[0];
+}
+
+function getOrCreateRatingSheet_(ss) {
+  var sheet = ss.getSheetByName('Yemək qiymətləndirməsi') || ss.getSheetByName('Yemek qiymetlendirmesi');
+  if (!sheet) {
+    sheet = ss.insertSheet('Yemək qiymətləndirməsi');
+  }
+  return sheet;
+}
+
+function getScannerSheet_() {
+  var ss = getScannerSpreadsheet_();
   var sheet = ss.getSheetByName('Scanner');
   if (!sheet) {
     sheet = ss.insertSheet('Scanner');
@@ -148,586 +252,159 @@ function getScannerSheet() {
   return sheet;
 }
 
- codex/fix-scanner-and-qr-code-updates-o8nd5s
-function normalizeDateKey(input) {
-  return (input || '').toString().trim();
+function ensureRatingHeaders_(sheet) {
+  var required = ['İD', 'Ad və Soyad', 'Ad', 'Soyad', 'Ata adı', 'Ulduzla qiymətləndirmə', 'Yemək Qiymətləndirmə', 'Tarix'];
+
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(required);
+    return;
+  }
+
+  var headers = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0];
+  var normalized = [];
+  for (var i = 0; i < headers.length; i++) {
+    normalized.push(normalize_(headers[i]));
+  }
+
+  for (var r = 0; r < required.length; r++) {
+    var key = normalize_(required[r]);
+    if (normalized.indexOf(key) === -1) {
+      sheet.getRange(1, sheet.getLastColumn() + 1).setValue(required[r]);
+      normalized.push(key);
+    }
+  }
+}
+
+function findEmployeeById_(sheet, employeeId) {
+  var data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) {
+    return { fullName: '', firstName: '', lastName: '', fatherName: '' };
+  }
+
+  var cols = detectColumns_(data[0]);
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (cols.id < 0 || toText_(row[cols.id]) !== employeeId) {
+      continue;
+    }
+
+    var fullName = cols.name >= 0 ? toText_(row[cols.name]) : '';
+    var firstName = cols.firstName >= 0 ? toText_(row[cols.firstName]) : '';
+    var lastName = cols.lastName >= 0 ? toText_(row[cols.lastName]) : '';
+    var fatherName = cols.fatherName >= 0 ? toText_(row[cols.fatherName]) : '';
+
+    if ((!firstName || !lastName) && fullName) {
+      var parts = fullName.split(' ');
+      var clean = [];
+      for (var p = 0; p < parts.length; p++) {
+        if (parts[p]) clean.push(parts[p]);
+      }
+      if (!firstName && clean.length > 0) firstName = clean[0];
+      if (!lastName && clean.length > 1) lastName = clean.slice(1).join(' ');
+    }
+
+    return {
+      fullName: fullName,
+      firstName: firstName,
+      lastName: lastName,
+      fatherName: fatherName
+    };
+  }
+
+  return { fullName: '', firstName: '', lastName: '', fatherName: '' };
+}
+
+function detectColumns_(headers) {
+  return {
+    id: findColumn_(headers, ['id', 'i̇d', 'əməkdaş id', 'employee id']),
+    name: findColumn_(headers, ['ad və soyad', 'ad soyad', 'full name']),
+    firstName: findColumn_(headers, ['ad', 'first name']),
+    lastName: findColumn_(headers, ['soyad', 'last name']),
+    fatherName: findColumn_(headers, ['ata adı', 'ata adi', 'father name']),
+    pass: findColumn_(headers, ['parol', 'password'])
+  };
+}
+
+function findColumn_(headers, aliases) {
+  var normalizedHeaders = [];
+  for (var i = 0; i < headers.length; i++) {
+    normalizedHeaders.push(normalize_(headers[i]));
+  }
+
+  for (var a = 0; a < aliases.length; a++) {
+    var alias = normalize_(aliases[a]);
+    for (var c = 0; c < normalizedHeaders.length; c++) {
+      if (normalizedHeaders[c] === alias || normalizedHeaders[c].indexOf(alias) !== -1 || alias.indexOf(normalizedHeaders[c]) !== -1) {
+        return c;
+      }
+    }
+  }
+  return -1;
+}
+
+function headerMap_(headers) {
+  var map = {};
+  for (var i = 0; i < headers.length; i++) {
+    map[normalize_(headers[i])] = i + 1;
+  }
+  return map;
+}
+
+function writeByAliases_(sheet, row, map, aliases, value) {
+  for (var i = 0; i < aliases.length; i++) {
+    var col = map[normalize_(aliases[i])];
+    if (col) {
+      sheet.getRange(row, col).setValue(value);
+      return true;
+    }
+  }
+  return false;
+}
+
+function ticketTypeName_(code) {
+  var types = {
+    S: 'Səhər Yeməyi',
+    G: 'Günorta Yeməyi',
+    A: 'Axşam Yeməyi',
+    Q: 'Quru Talon'
+  };
+  return types[code] || 'Naməlum';
+}
+
+function normalize_(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/ı/g, 'i')
+    .replace(/ə/g, 'e')
+    .replace(/ö/g, 'o')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ç/g, 'c')
+    .replace(/ğ/g, 'g')
+    .trim();
 }
 
 function todayDateKey_() {
   return Utilities.formatDate(new Date(), 'Asia/Baku', 'yyyyMMdd');
 }
 
-function parseQR(qrData) {
-  var parts = (qrData || '').toString().split('|');
-  // GHG|ID|TYPE_CODE|DATEKEY|HASH|TYPE_ID
-  if (parts.length < 6 || parts[0] !== 'GHG') return null;
-
-  const typeMap = { breakfast: 'Səhər Yeməyi', lunch: 'Günorta Yeməyi', dinner: 'Axşam Yeməyi', dry: 'Quru Talon' };
-  const normalizedType = normalize_(typeMap[ticketType] || ticketType);
-
-  const lastRow = scannerSheet.getLastRow();
-  if (lastRow < 2) return { status: 'success', used: false };
-
-  const values = scannerSheet.getRange(2, 1, lastRow - 1, scannerSheet.getLastColumn()).getValues();
-
-  for (var i = values.length - 1; i >= 0; i--) {
-    const row = values[i];
-    if (String(row[idCol - 1] || '').trim() !== employeeId) continue;
-
-    if (dateKey_(row[dateCol - 1]) !== dateStr) continue;
-
-    const rowType = normalize_(row[typeCol - 1]);
-    const statusText = normalize_(row[statusCol - 1]);
-    if (rowType === normalizedType && /təsdiq|tesdiq|istifadə/.test(statusText)) {
-      return { status: 'success', used: true };
-    }
+function getParam_(e, key) {
+  if (!e || !e.parameter || e.parameter[key] === undefined || e.parameter[key] === null) {
+    return '';
   }
- main
-
-  return {
-    empId: (parts[1] || '').trim(),
-    typeCode: (parts[2] || '').trim(),
-    dateKey: (parts[3] || '').trim(),
-    hash: (parts[4] || '').trim(),
-    typeId: (parts[5] || '').trim(),
-    raw: qrData
-  };
+  return String(e.parameter[key]).trim();
 }
 
- codex/fix-scanner-and-qr-code-updates-o8nd5s
-function findEmployeeName(empId) {
-  try {
-    var sheet = getEmployeesSheet();
-    if (!sheet) return 'Naməlum əməkdaş';
-
-    var data = sheet.getDataRange().getValues();
-    if (!data || data.length < 2) return 'Naməlum əməkdaş';
-
-    var idCol = 0;
-    var nameCol = 1;
-
-    var headers = data[0];
-    for (var i = 0; i < headers.length; i++) {
-      var h = String(headers[i] || '').trim().toLowerCase();
-      if (h === 'id' || h === 'i̇d') idCol = i;
-      if (h === 'ad və soyad' || h === 'ad soyad' || h === 'ad') nameCol = i;
-    }
-
-    for (var r = 1; r < data.length; r++) {
-      var rowId = data[r][idCol] ? data[r][idCol].toString().trim() : '';
-      if (rowId === empId) {
-        var rowName = data[r][nameCol] ? data[r][nameCol].toString().trim() : '';
-        return rowName || 'Naməlum əməkdaş';
-      }
-    }
-
-    return 'Naməlum əməkdaş';
-  } catch (error) {
-    return 'Naməlum əməkdaş';
-  }
+function toText_(value) {
+  return String(value || '').trim();
 }
 
-function handleLogin(e) {
-  var id = e.parameter.id ? e.parameter.id.toString().trim() : (e.parameter.employeeId ? e.parameter.employeeId.toString().trim() : '');
-  var pass = e.parameter.pass ? e.parameter.pass.toString().trim() : (e.parameter.password ? e.parameter.password.toString().trim() : '');
-
-  try {
-    var sheet = getEmployeesSheet();
-    if (!sheet) return { status: 'error', message: 'Sheet tapılmadı' };
-
-    var data = sheet.getDataRange().getValues();
-    if (!data || data.length < 2) return { status: 'not_found' };
-
-    var headers = data[0];
-    var idCol = 0;
-    var passCol = 2;
-    var nameCol = 1;
-
-    for (var i = 0; i < headers.length; i++) {
-      var h = String(headers[i] || '').trim().toLowerCase();
-      if (h === 'id' || h === 'i̇d') idCol = i;
-      if (h === 'parol' || h === 'password') passCol = i;
-      if (h === 'ad və soyad' || h === 'ad soyad' || h === 'ad') nameCol = i;
-    }
-
-    for (var r = 1; r < data.length; r++) {
-      var rowId = data[r][idCol] ? data[r][idCol].toString().trim() : '';
-      var rowPass = data[r][passCol] ? data[r][passCol].toString().trim() : '';
-      var rowName = data[r][nameCol] ? data[r][nameCol].toString().trim() : '';
-
-      if (rowId === id) {
-        if (rowPass === pass) {
-          return {
-            status: 'success',
-            employee: { id: id, fullName: rowName }
-          };
-        }
-        return { status: 'invalid_pass', message: 'Parol yanlışdır' };
-      }
-    }
-
-    return { status: 'not_found', message: 'İstifadəçi tapılmadı' };
-  } catch (error) {
-    return { status: 'error', message: 'Xəta: ' + error.toString() };
+function sendJSONP_(payload, callback) {
+  var text = JSON.stringify(payload);
+  if (callback) {
+    return ContentService.createTextOutput(callback + '(' + text + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
-}
-
-function handleScan(qrData) {
-  if (!qrData) return { status: 'error', message: 'QR data boşdur' };
-
-  var parsed = parseQR(qrData);
-  if (!parsed) return { status: 'error', message: 'Yanlış QR formatı' };
-
-  var empId = parsed.empId;
-  var typeCode = parsed.typeCode;
-  var typeId = parsed.typeId;
-  var dateKey = parsed.dateKey;
-
-  var todayKey = todayDateKey_();
-  if (dateKey !== todayKey) {
-    return {
-      status: 'error',
-      message: 'Bu QR yalnız öz günündə etibarlıdır',
-      data: { empId: empId, qrDate: dateKey, today: todayKey }
-    };
-  }
-
-  var typeNames = {
-    S: 'Səhər Yeməyi',
-    G: 'Günorta Yeməyi',
-    A: 'Axşam Yeməyi',
-    Q: 'Quru Talon'
-  };
-  var ticketType = typeNames[typeCode] || 'Naməlum';
-  var adSoyad = findEmployeeName(empId);
-
-  var alreadyScanned = false;
-  try {
-    var logSheet = getScannerSheet();
-    var logData = logSheet.getDataRange().getValues();
-
-    for (var i = 1; i < logData.length; i++) {
-      var rowDateKey = logData[i][2] ? logData[i][2].toString().trim() : '';
-      var rowEmpId = logData[i][3] ? logData[i][3].toString().trim() : '';
-      var rowTypeId = logData[i][6] ? logData[i][6].toString().trim() : '';
-      var rowStatus = logData[i][8] ? logData[i][8].toString().trim() : '';
-
-      if (rowDateKey === dateKey && rowEmpId === empId && rowTypeId === typeId && rowStatus === 'Təsdiqləndi') {
-        alreadyScanned = true;
-        break;
-      }
-    }
-
-    var status = alreadyScanned ? 'Təkrar skan' : 'Təsdiqləndi';
-    var now = new Date();
-    var todayStr = Utilities.formatDate(now, 'Asia/Baku', 'dd.MM.yyyy');
-    var timeStr = Utilities.formatDate(now, 'Asia/Baku', 'HH:mm:ss');
-
-    logSheet.appendRow([
-      todayStr,
-      timeStr,
-      dateKey,
-      empId,
-      adSoyad,
-      ticketType,
-      typeId,
-      qrData,
-      status
-    ]);
-  } catch (error) {
-    return { status: 'error', message: 'Yazma xətası: ' + error.toString() };
-  }
-
-  if (alreadyScanned) {
-    return {
-      status: 'warning',
-      message: 'Bu talon artıq istifadə edilib',
-      data: { empId: empId, adSoyad: adSoyad, ticketType: ticketType, qrData: qrData }
-
-function submitRating_(e) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const ratingSheet = getRatingSheet_(ss);
-
-  const employeeId = String(getParam_(e, 'employeeId') || getParam_(e, 'id') || '').trim();
-  const fullName = String(getParam_(e, 'fullName') || '').trim();
-  const ratingText = String(getParam_(e, 'ratingText') || getParam_(e, 'reason') || '').trim();
-  const ratingStars = Number(getParam_(e, 'ratingStars') || getParam_(e, 'rating') || 0);
-
-  if (!employeeId) return { status: 'error', message: 'employeeId boşdur' };
-  if (!ratingText) return { status: 'error', message: 'ratingText boşdur' };
-  if (!ratingStars || ratingStars < 1 || ratingStars > 5) return { status: 'error', message: 'ratingStars 1-5 arası olmalıdır' };
-
-  const map = headerMap_(ratingSheet);
-  const idCol = findHeaderColumn_(map, ['id', 'əməkdaş id', 'emekdas id', 'employee id']);
-  const nameCol = findHeaderColumn_(map, ['ad və soyad', 'ad soyad', 'full name']);
-  const starsCol = findHeaderColumn_(map, ['ulduzla qiymətləndirmə', 'ulduzla qiymetlendirme']);
-  const textCol = findHeaderColumn_(map, ['yemək qiymətləndirmə', 'yemek qiymetlendirme']);
-
-  if (!idCol || !starsCol || !textCol) {
-    return { status: 'error', message: 'Qiymətləndirmə sheet-də tələb olunan sütunlar tapılmadı' };
-  }
-
-  const rowIndex = findLatestRowByEmployeeInSheet_(ratingSheet, idCol, employeeId);
-  const targetRow = rowIndex > 0 ? rowIndex : ratingSheet.getLastRow() + 1;
-
-  ratingSheet.getRange(targetRow, idCol).setValue(employeeId);
-  if (nameCol && fullName) ratingSheet.getRange(targetRow, nameCol).setValue(fullName);
-  ratingSheet.getRange(targetRow, starsCol).setValue(ratingStars);
-  ratingSheet.getRange(targetRow, textCol).setValue(ratingText);
-
-  return {
-    status: 'success',
-    message: rowIndex > 0 ? 'Qiymətləndirmə yeniləndi' : 'Qiymətləndirmə əlavə edildi',
-    rowIndex: targetRow
-  };
-}
-
-function getScannedNames_(e) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const scannerSheet = mustGetSheet_(ss, CONFIG.sheets.scanner);
-
-  const dateStr = String(getParam_(e, 'date') || '').trim() || dateKey_(new Date());
-  const map = headerMap_(scannerSheet);
-  const dateCol = findHeaderColumn_(map, ['tarix', 'date']);
-  const idCol = findHeaderColumn_(map, ['əməkdaş id', 'emekdas id', 'employee id', 'id']);
-  const nameCol = findHeaderColumn_(map, ['ad və soyad', 'ad soyad', 'full name']);
-  const typeCol = findHeaderColumn_(map, ['talon növü', 'ticket type', 'növ']);
-  const statusCol = findHeaderColumn_(map, ['status', 'vəziyyət']);
-
-  if (!dateCol || !idCol || !nameCol || !statusCol) {
-    return { status: 'error', message: 'Scanner sütunları natamamdır', items: [] };
-  }
-
-  const lastRow = scannerSheet.getLastRow();
-  if (lastRow < 2) return { status: 'success', items: [] };
-
-  const values = scannerSheet.getRange(2, 1, lastRow - 1, scannerSheet.getLastColumn()).getValues();
-  const items = [];
-
-  for (var i = values.length - 1; i >= 0; i--) {
-    const row = values[i];
-    const statusText = normalize_(row[statusCol - 1]);
-    if (!/təsdiq|tesdiq|istifadə/.test(statusText)) continue;
-    if (dateKey_(row[dateCol - 1]) !== dateStr) continue;
-
-    items.push({
-      employeeId: String(row[idCol - 1] || '').trim(),
-      fullName: String(row[nameCol - 1] || '').trim(),
-      ticketType: typeCol ? String(row[typeCol - 1] || '').trim() : '',
-      status: String(row[statusCol - 1] || '').trim()
-    });
-  }
-
-  return { status: 'success', items: items };
-}
-
-function findLatestRowByEmployeeInSheet_(sheet, idCol, employeeId) {
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return 0;
-
-  const values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
-  for (var i = values.length - 1; i >= 0; i--) {
-    if (String(values[i][idCol - 1] || '').trim() === employeeId) return i + 2;
-  }
-  return 0;
-}
-
-function scanTicket_(qrData) {
-  if (!qrData) {
-    return { status: 'error', message: 'QR məlumatı boşdur' };
-  }
-
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const scannerSheet = mustGetSheet_(ss, CONFIG.sheets.scanner);
-  const namesSheet = mustGetSheet_(ss, CONFIG.sheets.names);
-  const reportSheet = mustGetSheet_(ss, CONFIG.sheets.report);
-
-  const now = new Date();
-  const parsed = parseQr_(qrData);
-  const reportRowData = findReportByQr_(reportSheet, qrData);
-
-  const employeeId = reportRowData.empId || parsed.empId || '';
-  const ticketType = reportRowData.ticketType || parsed.ticketType || 'Bilinməyən talon';
-  const fullName = findNameById_(namesSheet, employeeId) || 'Bilinməyən əməkdaş';
-
-  const alreadyUsed = isQrAlreadyUsed_(scannerSheet, qrData) || reportRowData.used;
-
-  if (alreadyUsed) {
-    appendScannerRow_(scannerSheet, {
-      date: now,
-      employeeId: employeeId,
-      fullName: fullName,
-      ticketType: ticketType,
-      qrData: qrData,
-      status: CONFIG.scannerStatus.duplicate
-    });
-
-    return {
-      status: 'warning',
-      message: 'Bu QR artıq istifadə edilib',
-      data: { empId: employeeId, adSoyad: fullName, ticketType: ticketType, qrData: qrData }
- main
-    };
-  }
-
-  return {
-    status: 'success',
- codex/fix-scanner-and-qr-code-updates-o8nd5s
-    message: 'Təsdiqləndi',
-    data: { empId: empId, adSoyad: adSoyad, ticketType: ticketType, qrData: qrData }
-  };
-}
-
-function handleCheckScanStatus(e) {
-  var empId = e.parameter.id ? e.parameter.id.toString().trim() : '';
-  var ticketType = e.parameter.ticketType ? e.parameter.ticketType.toString().trim() : '';
-  var dateKey = normalizeDateKey(e.parameter.date);
-
-  if (!empId || !ticketType || !dateKey) {
-    return { status: 'error', used: false, message: 'Parametrlər natamamdır' };
-  }
-
-  try {
-    var logSheet = getScannerSheet();
-    var logData = logSheet.getDataRange().getValues();
-
-    var used = false;
-    for (var i = 1; i < logData.length; i++) {
-      var rowDateKey = logData[i][2] ? logData[i][2].toString().trim() : '';
-      var rowEmpId = logData[i][3] ? logData[i][3].toString().trim() : '';
-      var rowTypeId = logData[i][6] ? logData[i][6].toString().trim() : '';
-      var rowStatus = logData[i][8] ? logData[i][8].toString().trim() : '';
-
-      if (rowDateKey === dateKey && rowEmpId === empId && rowTypeId === ticketType && rowStatus === 'Təsdiqləndi') {
-        used = true;
-        break;
-      }
-    }
-
-    message: 'Talon təsdiqləndi',
-    data: { empId: employeeId, adSoyad: fullName, ticketType: ticketType, qrData: qrData }
-  };
-}
-
-function parseQr_(qrData) {
-  const parts = String(qrData).split('|').map(function (x) { return x.trim(); });
-
-  if (parts.length >= 3 && parts[0] === 'GHG') {
-    const typeMap = { S: 'Səhər Yeməyi', G: 'Günorta Yeməyi', A: 'Axşam Yeməyi', Q: 'Quru Talon' };
-    return { empId: parts[1] || '', ticketType: typeMap[parts[2]] || parts[2] || '' };
-  }
-
-  return { empId: '', ticketType: '' };
-}
-
-function findReportByQr_(sheet, qrData) {
-  const map = headerMap_(sheet);
-  const qrCol = findHeaderColumn_(map, ['talon id', 'qr', 'qr kod', 'kod']);
-  const empCol = findHeaderColumn_(map, ['əməkdaş id', 'employee id', 'id']);
-  const typeCol = findHeaderColumn_(map, ['talon növü', 'növ', 'ticket type']);
-  const statusCol = findHeaderColumn_(map, ['status', 'vəziyyət']);
-
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2 || !qrCol) return { rowIndex: 0, empId: '', ticketType: '', used: false };
-
-  const values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
-
-  for (var i = 0; i < values.length; i++) {
-    const row = values[i];
-    if (normalize_(row[qrCol - 1]) !== normalize_(qrData)) continue;
-
-    const statusText = String(statusCol ? row[statusCol - 1] : '').toLowerCase();
-    return {
-      rowIndex: i + 2,
-      empId: empCol ? String(row[empCol - 1]).trim() : '',
-      ticketType: typeCol ? String(row[typeCol - 1]).trim() : '',
-      used: /istifadə|tesdiq|təsdiq|used/.test(statusText)
-    };
-  }
-
-  return { rowIndex: 0, empId: '', ticketType: '', used: false };
-}
-
-function markReportAsUsed_(sheet, rowIndex, now) {
-  if (!rowIndex) return;
-
-  const map = headerMap_(sheet);
-  const statusCol = findHeaderColumn_(map, ['status', 'vəziyyət']);
-  const usedDateCol = findHeaderColumn_(map, ['istifadə tarixi', 'used date', 'tarix']);
-  const usedTimeCol = findHeaderColumn_(map, ['istifadə saatı', 'used time', 'saat']);
-
-  if (statusCol) sheet.getRange(rowIndex, statusCol).setValue('İstifadə edildi');
-
-  if (usedDateCol) {
-    sheet.getRange(rowIndex, usedDateCol).setValue(now);
-    sheet.getRange(rowIndex, usedDateCol).setNumberFormat('dd.MM.yyyy');
-  }
- main
-
-    return { status: 'success', used: used };
-  } catch (error) {
-    return { status: 'error', used: false, message: error.toString() };
-  }
-}
-
-function handleGetScannedNames(e) {
-  var dateKey = normalizeDateKey(e.parameter.date || todayDateKey_());
-
- codex/fix-scanner-and-qr-code-updates-o8nd5s
-  try {
-    var logSheet = getScannerSheet();
-    var logData = logSheet.getDataRange().getValues();
-    var items = [];
-
-    for (var i = logData.length - 1; i >= 1; i--) {
-      var rowDateKey = logData[i][2] ? logData[i][2].toString().trim() : '';
-      var rowStatus = logData[i][8] ? logData[i][8].toString().trim() : '';
-      if (rowDateKey !== dateKey || rowStatus !== 'Təsdiqləndi') continue;
-
-      items.push({
-        employeeId: logData[i][3] ? logData[i][3].toString().trim() : '',
-        fullName: logData[i][4] ? logData[i][4].toString().trim() : '',
-        ticketType: logData[i][5] ? logData[i][5].toString().trim() : '',
-        status: rowStatus,
-        time: logData[i][1] ? logData[i][1].toString().trim() : ''
-      });
-    }
-
-  const values = scannerSheet.getRange(2, 1, lastRow - 1, 7).getValues();
-  const normalizedQr = normalize_(qrData);
-
-  for (var i = 0; i < values.length; i++) {
-    const qr = normalize_(values[i][5]);
-    const status = String(values[i][6] || '').toLowerCase();
-    if (qr === normalizedQr && /təsdiq|tesdiq|istifadə/.test(status)) return true;
-  }
-
-  return false;
-}
- main
-
-    return { status: 'success', items: items };
-  } catch (error) {
-    return { status: 'error', items: [], message: error.toString() };
-  }
-}
-
-function handleSubmitRating(e) {
-  var employeeId = (e.parameter.employeeId || e.parameter.id || '').toString().trim();
-  var ratingStars = Number(e.parameter.ratingStars || e.parameter.rating || 0);
-  var ratingText = (e.parameter.ratingText || e.parameter.reason || '').toString().trim();
-
-  if (!employeeId) return { status: 'error', message: 'employeeId boşdur' };
-  if (!ratingText) return { status: 'error', message: 'ratingText boşdur' };
-  if (!ratingStars || ratingStars < 1 || ratingStars > 5) return { status: 'error', message: 'rating 1-5 olmalıdır' };
-
- codex/fix-scanner-and-qr-code-updates-o8nd5s
-  try {
-    var sheet = getEmployeesSheet();
-    var data = sheet.getDataRange().getValues();
-    if (!data || data.length < 2) return { status: 'error', message: 'Cədvəl boşdur' };
-
-    var headers = data[0];
-    var idCol = 0;
-    var starsCol = 2;
-    var textCol = 3;
-
-    for (var i = 0; i < headers.length; i++) {
-      var h = String(headers[i] || '').trim().toLowerCase();
-      if (h === 'id' || h === 'i̇d') idCol = i;
-      if (h === 'ulduzla qiymətləndirmə' || h === 'ulduzla qiymetlendirme') starsCol = i;
-      if (h === 'yemək qiymətləndirmə' || h === 'yemek qiymetlendirme' || h === 'yemək qiymətləndirməsi') textCol = i;
-    }
-
-    var foundRow = 0;
-    for (var r = 1; r < data.length; r++) {
-      var rowId = data[r][idCol] ? data[r][idCol].toString().trim() : '';
-      if (rowId === employeeId) {
-        foundRow = r + 1;
-        break;
-      }
-    }
-
-  for (var i = 0; i < values.length; i++) {
-    if (String(values[i][0]).trim() === idStr) return String(values[i][1]).trim();
-  }
-
-  return '';
-}
-
-function getRatingSheet_(ss) {
-  return ss.getSheetByName(CONFIG.sheets.rating)
-    || ss.getSheetByName('Yemək Qiymətləndirməsi')
-    || ss.getSheetByName('Yemek qiymetlendirmesi')
-    || ss.getSheetByName(CONFIG.sheets.idSheet)
-    || mustGetSheet_(ss, CONFIG.sheets.rating);
-}
-
-function headerMap_(sheet) {
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const map = {};
- main
-
-    if (!foundRow) return { status: 'error', message: 'ID tapılmadı' };
-
-    sheet.getRange(foundRow, starsCol + 1).setValue(ratingStars);
-    sheet.getRange(foundRow, textCol + 1).setValue(ratingText);
-
-    return { status: 'success', message: 'Qiymətləndirmə yazıldı', rowIndex: foundRow };
-  } catch (error) {
-    return { status: 'error', message: error.toString() };
-  }
- codex/fix-scanner-and-qr-code-updates-o8nd5s
-
-  return null;
-}
-
-function normalizeHeader_(text) {
-  return String(text || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .replace(/[ı]/g, 'i');
-}
-
-function normalize_(text) {
-  return String(text || '').trim().toLowerCase();
-}
-
-function dateKey_(value) {
-  if (!value) return '';
-
-  if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) {
-    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyyMMdd');
-  }
-
-  const parsed = new Date(value);
-  if (!isNaN(parsed.getTime())) {
-    return Utilities.formatDate(parsed, Session.getScriptTimeZone(), 'yyyyMMdd');
-  }
-
-  const text = String(value).trim();
-  const m = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-  if (m) return m[3] + ('0' + m[2]).slice(-2) + ('0' + m[1]).slice(-2);
-
-  return '';
-}
-
-function mustGetSheet_(ss, sheetName) {
-  const sheet = ss.getSheetByName(sheetName);
-  if (!sheet) throw new Error('Sheet tapılmadı: ' + sheetName);
-  return sheet;
-}
-
-function getParam_(e, name) {
-  return (e && e.parameter && e.parameter[name]) || '';
-}
-
-function jsonResponse_(payload, callback) {
-  const text = callback ? callback + '(' + JSON.stringify(payload) + ')' : JSON.stringify(payload);
-
-  return ContentService
-    .createTextOutput(text)
-    .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
- main
+  return ContentService.createTextOutput(text)
+    .setMimeType(ContentService.MimeType.JSON);
 }
