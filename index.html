@@ -358,10 +358,14 @@
 
 
 <script>
+ codex/fix-scanner-and-qr-code-updates-iu10e6
         const API_ENDPOINTS = [
             'https://script.google.com/macros/s/AKfycbwIuxpqFpC3sd6CXOMVe2MeODp1bJ9vggfu9VbmxDXH1itIOigLO-xmptb2x5QldWoa/exec',
             'https://script.google.com/macros/s/AKfycbxJPbFnffij4Z49X0kU3I4j5PghMJxbRrEx7UFcBWieAnFJN_zR4qwDnDpBTcM0D0cN/exec'
         ];
+
+        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbw0zgLL_s_aH_hoT59OWAtFp3ASbkRDRN0NYlUJVAJIPjHibpFpr8ZxtB7pJwZhSUEL/exec';
+ main
 
         const TICKET_TYPES = [
             { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
@@ -446,6 +450,7 @@
             }
         }
 
+ codex/fix-scanner-and-qr-code-updates-iu10e6
         function parsePayload(data) {
             if (typeof data === 'string') {
                 try { return JSON.parse(data); } catch (_) { return null; }
@@ -473,12 +478,23 @@
             return {
                 id: String(employeeId),
                 fullName: String(fullName || 'İşçi')
+
+        function normalizeLoginResponse(data, fallbackId) {
+            if (!data || typeof data !== 'object') return null;
+            const status = String(data.status || '').toLowerCase();
+            const employee = data.employee || {};
+            if (status !== 'success' && !employee.id) return null;
+            return {
+                id: String(employee.id || data.id || fallbackId),
+                fullName: employee.fullName || data.fullName || 'İşçi'
+ main
             };
         }
 
         async function attemptLogin(id, pass) {
             const encodedId = encodeURIComponent(id);
             const encodedPass = encodeURIComponent(pass);
+ codex/fix-scanner-and-qr-code-updates-iu10e6
 
             const paramVariants = [
                 `action=login&id=${encodedId}&pass=${encodedPass}`,
@@ -507,6 +523,21 @@
             }
 
             throw new Error(lastMessage || 'login-failed');
+
+            const candidates = [
+                `${SHEET_API_URL}?action=login&id=${encodedId}&pass=${encodedPass}`,
+                `${SHEET_API_URL}?action=login&employeeId=${encodedId}&password=${encodedPass}`
+            ];
+
+            for (const url of candidates) {
+                try {
+                    const employee = normalizeLoginResponse(await requestAPI(url), id);
+                    if (employee) return employee;
+                } catch (_) {}
+            }
+
+            throw new Error('login-failed');
+ main
         }
 
         function showError(msg) {
@@ -535,8 +566,12 @@
             showInfo('Məlumatlar yoxlanılır...');
 
             try {
+ codex/fix-scanner-and-qr-code-updates-iu10e6
                 const loginResult = await attemptLogin(id, pass);
                 currentEmployee = loginResult.employee;
+
+                currentEmployee = await attemptLogin(id, pass);
+ main
                 todayStr = getTodayString();
                 const savedDate = localStorage.getItem(`ghg_date_${currentEmployee.id}`);
 
@@ -558,10 +593,15 @@
                 document.getElementById('displayId').textContent = currentEmployee.id;
                 document.getElementById('dateInfo').textContent = '📅 ' + new Date().toLocaleDateString('az-AZ') + ' | Hər gün yeni kodlar';
                 renderTickets();
+ codex/fix-scanner-and-qr-code-updates-iu10e6
             } catch (err) {
                 showError(err && err.message && err.message !== 'login-failed'
                     ? `Qeydiyyat/giriş alınmadı: ${err.message}`
                     : 'Qeydiyyat/giriş alınmadı. ID və parolu yoxlayın.');
+
+            } catch (_) {
+                showError('Qeydiyyat/giriş alınmadı. ID və parolu yoxlayın.');
+ main
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Daxil Ol';
@@ -612,6 +652,7 @@
 
             const checkScanStatus = async () => {
                 try {
+ codex/fix-scanner-and-qr-code-updates-iu10e6
                     let data = null;
                     for (const endpoint of API_ENDPOINTS) {
                         try {
@@ -619,6 +660,9 @@
                             if (data) break;
                         } catch (_) {}
                     }
+
+                    const data = await requestAPI(`${SHEET_API_URL}?action=checkScanStatus&id=${currentEmployee.id}&ticketType=${type.id}&date=${getTodayString()}`);
+ main
                     if (data && data.status === 'success' && data.used === true) {
                         markUsed(type.id);
                         closeModal();
@@ -701,6 +745,7 @@
                 date: dateStr
             });
 
+ codex/fix-scanner-and-qr-code-updates-iu10e6
             let data = null;
             for (const endpoint of API_ENDPOINTS) {
                 try {
@@ -708,6 +753,9 @@
                     if (data) break;
                 } catch (_) {}
             }
+
+            const data = await requestAPI(`${SHEET_API_URL}?${query}`);
+ main
             return !!(data && (data.status === 'success' || data.result === 'success' || data.ok === true));
         }
 
