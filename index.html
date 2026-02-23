@@ -397,6 +397,16 @@
             </div>
         </div>
     </div>
+codex/fix-scanner-and-qr-code-updates-o8nd5s
+    <div class="site-credit">by created CED</div>
+
+
+<script>
+        const API_ENDPOINTS = [
+            'https://script.google.com/macros/s/AKfycbwIuxpqFpC3sd6CXOMVe2MeODp1bJ9vggfu9VbmxDXH1itIOigLO-xmptb2x5QldWoa/exec',
+            'https://script.google.com/macros/s/AKfycbxJPbFnffij4Z49X0kU3I4j5PghMJxbRrEx7UFcBWieAnFJN_zR4qwDnDpBTcM0D0cN/exec'
+        ];
+
 
     <script>
         // ============================================================
@@ -413,6 +423,7 @@
             'dinner': 'd',
             'dry': 'dr'
         };
+ main
 
         const TICKET_TYPES = [
             { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00' },
@@ -420,6 +431,77 @@
             { id: 'dinner', name: 'Axşam Yeməyi', icon: '🌙', time: '18:00-21:00' },
             { id: 'dry', name: 'Quru Talon', icon: '📦', time: 'Hər zaman' }
         ];
+
+ codex/fix-scanner-and-qr-code-updates-o8nd5s
+        let currentEmployee = null;
+        let todayStr = '';
+        let usedTicket = null;
+        let scanPollInterval = null;
+        let selectedRating = 0;
+        const LOGIN_CREDENTIALS_KEY = 'ghg_login_credentials';
+
+        function getTodayString() {
+            const d = new Date();
+            return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+        }
+
+        function generateDailyQR(type) {
+            const dateStr = getTodayString();
+            const unique = `${currentEmployee.id}_${dateStr}_${type.code}_${type.id}`;
+            let hash = 0;
+            for (let i = 0; i < unique.length; i++) {
+                hash = ((hash << 5) - hash) + unique.charCodeAt(i);
+                hash |= 0;
+            }
+            const hashCode = Math.abs(hash % 9000) + 1000;
+            // GHG|ID|TYPE_CODE|DATEKEY|HASH|TYPE_ID
+            return `GHG|${currentEmployee.id}|${type.code}|${dateStr}|${hashCode}|${type.id}`;
+        }
+
+        async function fetchJSON(url) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 15000);
+            try {
+                const res = await fetch(url, { method: 'GET', signal: controller.signal });
+                if (!res.ok) throw new Error('http-' + res.status);
+                return await res.json();
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        function fetchJSONP(url) {
+            return new Promise((resolve, reject) => {
+                const cb = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+                const script = document.createElement('script');
+                let settled = false;
+
+                function cleanup() {
+                    if (window[cb]) delete window[cb];
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                }
+
+                const timer = setTimeout(() => {
+                    if (settled) return;
+                    settled = true;
+                    cleanup();
+                    reject(new Error('timeout'));
+                }, 15000);
+
+                window[cb] = (data) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    cleanup();
+                    resolve(data);
+                };
+
+                script.onerror = () => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    cleanup();
+                    reject(new Error('jsonp-load-error'));
 
         // ============================================================
         // AVTOMATIK YENİLƏMƏ FUNKSIYALARI
@@ -596,10 +678,299 @@
                     used: false,
                     usedDate: null,
                     usedTime: null
+ main
                 };
             });
             return tickets;
         }
+
+ codex/fix-scanner-and-qr-code-updates-o8nd5s
+        async function requestAPI(url) {
+            try {
+                return await fetchJSON(url);
+            } catch (err) {
+                return await fetchJSONP(url);
+            }
+        }
+
+        function parsePayload(data) {
+            if (typeof data === 'string') {
+                try { return JSON.parse(data); } catch (_) { return null; }
+            }
+            return data && typeof data === 'object' ? data : null;
+        }
+
+        function isSuccessPayload(payload) {
+            if (!payload || typeof payload !== 'object') return false;
+            const status = String(payload.status || payload.result || '').toLowerCase();
+            return status === 'success' || status === 'ok' || payload.ok === true || payload.success === true;
+        }
+
+        function normalizeLoginResponse(data, fallbackId) {
+            const payload = parsePayload(data);
+            if (!payload) return null;
+
+            const employee = payload.employee || payload.user || {};
+            const employeeId = employee.id || employee.employeeId || payload.id || payload.employeeId || fallbackId;
+            const fullName = employee.fullName || employee.name || payload.fullName || payload.name || 'İşçi';
+
+            if (!employeeId) return null;
+            if (!isSuccessPayload(payload) && !employee.id && !payload.id) return null;
+
+            return {
+                id: String(employeeId),
+                fullName: String(fullName || 'İşçi')
+            };
+        }
+
+        async function attemptLogin(id, pass) {
+            const encodedId = encodeURIComponent(id);
+            const encodedPass = encodeURIComponent(pass);
+
+            const paramVariants = [
+                `action=login&id=${encodedId}&pass=${encodedPass}`,
+                `action=login&id=${encodedId}&password=${encodedPass}`,
+                `action=login&employeeId=${encodedId}&pass=${encodedPass}`,
+                `action=login&employeeId=${encodedId}&password=${encodedPass}`
+            ];
+
+            let lastMessage = '';
+
+            for (const endpoint of API_ENDPOINTS) {
+                for (const params of paramVariants) {
+                    const url = `${endpoint}?${params}`;
+                    try {
+                        const raw = await requestAPI(url);
+                        const payload = parsePayload(raw);
+                        const employee = normalizeLoginResponse(payload, id);
+                        if (employee) {
+                            return { employee, endpoint };
+                        }
+                        if (payload && payload.message) lastMessage = String(payload.message);
+                    } catch (_) {
+                        // növbəti endpoint/variant yoxlanılır
+                    }
+                }
+            }
+
+            throw new Error(lastMessage || 'login-failed');
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.style.color = 'red';
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function showInfo(msg) {
+            const el = document.getElementById('errorMsg');
+            el.style.color = '#1976d2';
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const id = document.getElementById('employeeId').value.trim();
+            const pass = document.getElementById('employeePass').value.trim();
+            const loginBtn = document.getElementById('loginBtn');
+            if (!id || !pass) return showError('ID və parol daxil edin!');
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Yoxlanılır...';
+            showInfo('Məlumatlar yoxlanılır...');
+
+            try {
+                const loginResult = await attemptLogin(id, pass);
+                currentEmployee = loginResult.employee;
+                todayStr = getTodayString();
+                const savedDate = localStorage.getItem(`ghg_date_${currentEmployee.id}`);
+
+                if (savedDate !== todayStr) {
+                    localStorage.setItem(`ghg_date_${currentEmployee.id}`, todayStr);
+                    localStorage.removeItem(`ghg_used_${currentEmployee.id}`);
+                    usedTicket = null;
+                } else {
+                    usedTicket = localStorage.getItem(`ghg_used_${currentEmployee.id}`);
+                }
+
+                localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
+                localStorage.setItem(LOGIN_CREDENTIALS_KEY, JSON.stringify({ id, pass }));
+
+                document.getElementById('errorMsg').style.display = 'none';
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                document.getElementById('displayName').textContent = currentEmployee.fullName;
+                document.getElementById('displayId').textContent = currentEmployee.id;
+                document.getElementById('dateInfo').textContent = '📅 ' + new Date().toLocaleDateString('az-AZ') + ' | Hər gün yeni kodlar';
+                renderTickets();
+            } catch (err) {
+                showError(err && err.message && err.message !== 'login-failed'
+                    ? `Qeydiyyat/giriş alınmadı: ${err.message}`
+                    : 'Qeydiyyat/giriş alınmadı. ID və parolu yoxlayın.');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Daxil Ol';
+            }
+        }
+
+        function renderTickets() {
+            const container = document.getElementById('ticketContainer');
+            container.innerHTML = '';
+
+            TICKET_TYPES.forEach(type => {
+                const isUsed = usedTicket === type.id;
+                const isDisabled = usedTicket && usedTicket !== type.id;
+                const card = document.createElement('div');
+                card.className = `ticket-card ${isUsed ? 'used' : ''} ${isDisabled ? 'disabled' : ''}`;
+                if (!isUsed && !isDisabled) card.onclick = () => showTicket(type);
+
+                let statusText = '<span class="ticket-status status-active">AKTIV</span>';
+                if (isUsed) statusText = '<span class="ticket-status status-used">İSTİFADƏ EDİLDİ</span>';
+                else if (isDisabled) statusText = '<span class="ticket-status status-disabled">DEAKTIV</span>';
+
+                card.innerHTML = `<div class="ticket-icon">${type.icon}</div><div class="ticket-name">${type.name}</div><div class="ticket-time">${type.time}</div>${statusText}`;
+                container.appendChild(card);
+            });
+        }
+
+        function showTicket(type) {
+            const qrData = generateDailyQR(type);
+            document.getElementById('qrTicketInfo').textContent = `${currentEmployee.fullName} | ${type.name} | Skan gözlənilir...`;
+            document.getElementById('qrValidityInfo').textContent = `📅 Etibarlılıq: yalnız ${new Date().toLocaleDateString('az-AZ')}`;
+
+            const qrDiv = document.getElementById('modalQR');
+            qrDiv.innerHTML = '';
+            new QRCode(qrDiv, { text: qrData, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.H });
+
+            document.getElementById('qrModal').style.display = 'flex';
+            startScanStatusPolling(type);
+        }
+
+        function markUsed(typeId) {
+            usedTicket = typeId;
+            localStorage.setItem(`ghg_used_${currentEmployee.id}`, typeId);
+            renderTickets();
+        }
+
+        function startScanStatusPolling(type) {
+            if (scanPollInterval) clearInterval(scanPollInterval);
+
+            const checkScanStatus = async () => {
+                try {
+                    let data = null;
+                    for (const endpoint of API_ENDPOINTS) {
+                        try {
+                            data = await requestAPI(`${endpoint}?action=checkScanStatus&id=${currentEmployee.id}&ticketType=${type.id}&date=${getTodayString()}`);
+                            if (data) break;
+                        } catch (_) {}
+                    }
+                    if (data && data.status === 'success' && data.used === true) {
+                        markUsed(type.id);
+                        closeModal();
+                        if (scanPollInterval) clearInterval(scanPollInterval);
+                        scanPollInterval = null;
+                    }
+                } catch (_) {}
+            };
+
+            checkScanStatus();
+            scanPollInterval = setInterval(checkScanStatus, 3000);
+        }
+
+        function closeModal(event) {
+            if (event && event.target && event.target.id !== 'qrModal') return;
+            document.getElementById('qrModal').style.display = 'none';
+            if (scanPollInterval) {
+                clearInterval(scanPollInterval);
+                scanPollInterval = null;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('ghg_employee');
+            localStorage.removeItem(LOGIN_CREDENTIALS_KEY);
+            currentEmployee = null;
+            usedTicket = null;
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('employeePass').value = '';
+        }
+
+        function openRatingModal() {
+            if (!currentEmployee) return;
+            selectedRating = 0;
+            document.getElementById('ratingReason').value = '';
+            document.getElementById('ratingError').style.display = 'none';
+            renderStars();
+            document.getElementById('ratingModal').style.display = 'flex';
+        }
+
+        function closeRatingModal(event) {
+            if (!event || event.target.id === 'ratingModal') {
+                document.getElementById('ratingModal').style.display = 'none';
+            }
+        }
+
+        function renderStars() {
+            const container = document.getElementById('starsContainer');
+            container.innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                const starBtn = document.createElement('button');
+                starBtn.type = 'button';
+                starBtn.className = `star ${i <= selectedRating ? 'active' : ''}`;
+                starBtn.innerHTML = '★';
+                starBtn.onclick = () => {
+                    selectedRating = i;
+                    renderStars();
+                };
+                container.appendChild(starBtn);
+            }
+        }
+
+        function buildQuery(params) {
+            return Object.keys(params)
+                .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+                .join('&');
+        }
+
+        async function submitRatingToSheet(id, fullName, rating, reason, dateStr) {
+            const query = buildQuery({
+                action: 'submitRating',
+                id,
+                employeeId: id,
+                fullName,
+                rating: String(rating),
+                ratingStars: String(rating),
+                reason,
+                ratingText: reason,
+                date: dateStr
+            });
+
+            let data = null;
+            for (const endpoint of API_ENDPOINTS) {
+                try {
+                    data = await requestAPI(`${endpoint}?${query}`);
+                    if (data) break;
+                } catch (_) {}
+            }
+            return !!(data && (data.status === 'success' || data.result === 'success' || data.ok === true));
+        }
+
+        async function submitRating() {
+            const reason = document.getElementById('ratingReason').value.trim();
+            const errorEl = document.getElementById('ratingError');
+            const submitBtn = document.getElementById('submitRatingBtn');
+
+            if (selectedRating < 1 || selectedRating > 5) {
+                errorEl.textContent = 'Zəhmət olmasa ulduz seçin (1-5).';
+                errorEl.style.display = 'block';
+                return;
+            }
+            if (!reason) {
+                errorEl.textContent = 'Səbəbi yazın ki, sheet-də görünsün.';
+                errorEl.style.display = 'block';
 
         // ============================================================
         // QR KOD YARATMA FUNKSIYALARI
@@ -669,6 +1040,7 @@
             if (typeof QRCode === 'undefined') {
                 console.error('❌ QRCode kütüphanəsi yüklənmədi!');
                 wrapper.innerHTML = `<div style="padding:20px;text-align:center;color:red;"><strong>QRCode Yüklənmədi</strong></div>`;
+ main
                 return;
             }
             
@@ -681,6 +1053,50 @@
             wrapper.innerHTML = '';
             
             try {
+ codex/fix-scanner-and-qr-code-updates-o8nd5s
+                const ok = await submitRatingToSheet(currentEmployee.id, currentEmployee.fullName, selectedRating, reason, getTodayString());
+                if (!ok) throw new Error('submit-failed');
+                closeRatingModal();
+                alert('Qiymətləndirmə uğurla göndərildi.');
+            } catch (_) {
+                errorEl.textContent = 'Göndərmə zamanı xəta baş verdi. Yenidən cəhd edin.';
+                errorEl.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Qiyməti göndər';
+            }
+        }
+
+        window.onload = () => {
+            const savedCredentials = localStorage.getItem(LOGIN_CREDENTIALS_KEY);
+            if (savedCredentials) {
+                try {
+                    const creds = JSON.parse(savedCredentials);
+                    document.getElementById('employeeId').value = creds.id || '';
+                    document.getElementById('employeePass').value = creds.pass || '';
+                } catch (_) {}
+            }
+
+            const saved = localStorage.getItem('ghg_employee');
+            if (!saved) return;
+
+            try {
+                currentEmployee = JSON.parse(saved);
+                todayStr = getTodayString();
+                const savedDate = localStorage.getItem(`ghg_date_${currentEmployee.id}`);
+                if (savedDate === todayStr) usedTicket = localStorage.getItem(`ghg_used_${currentEmployee.id}`);
+
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                document.getElementById('displayName').textContent = currentEmployee.fullName;
+                document.getElementById('displayId').textContent = currentEmployee.id;
+                document.getElementById('dateInfo').textContent = '📅 ' + new Date().toLocaleDateString('az-AZ') + ' | Hər gün yeni kodlar';
+                renderTickets();
+            } catch (_) {
+                localStorage.removeItem('ghg_employee');
+            }
+        };
+
                 new QRCode(wrapper, {
                     text: qrData,
                     width: 140,
@@ -715,6 +1131,7 @@
                 }
             });
         }
+ main
     </script>
 </body>
 
