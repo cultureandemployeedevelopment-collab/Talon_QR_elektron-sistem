@@ -1,479 +1,991 @@
-// Bu Apps Script həm login (employees), həm də scanner axınlarını idarə edir.
-var EMPLOYEES_FILE_ID = '1tJ_U_EtSF7YCjGahjKYn-w_TDgCuaPZL_tGMJ0ZFOdM';
-var SCANNER_FILE_ID = '-1RAGc0WsyXO6A7fjyad_nJDiLqM22eYREccJdjie3TMw';
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>GHG Yemək Talonu</title>
 
-function doGet(e) {
-  var callback = getParam_(e, 'callback');
-  try {
-    var action = getParam_(e, 'action');
-    var result;
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
-    if (action === 'login') {
-      result = handleLogin_(e);
-    } else if (action === 'scanTicket') {
-      result = handleScan_(getParam_(e, 'qrData'));
-    } else if (action === 'checkScanStatus') {
-      result = handleCheckScanStatus_(e);
-    } else if (action === 'submitRating') {
-      result = handleSubmitRating_(e);
-    } else {
-      result = { status: 'error', message: 'Naməlum əməliyyat' };
+  <style>
+    :root{
+      --navy-950:#050b16;
+      --navy-900:#070f1f;
+      --navy-850:#09142a;
+      --navy-800:#0b1732;
+
+      --blue-500:#2b6cff;
+      --text:#eaf1ff;
+      --muted:rgba(234,241,255,.72);
+
+      --stroke:rgba(255,255,255,.10);
+      --shadow: 0 22px 70px rgba(0,0,0,.62);
+      --shadow2: 0 14px 46px rgba(0,0,0,.55);
+
+      --radius: 22px;
+      --speed: 240ms;
+
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
     }
 
-    return sendJSONP_(result, callback);
-  } catch (err) {
-    return sendJSONP_({ status: 'error', message: String(err) }, callback);
-  }
-}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      min-height:100dvh;
+      color:var(--text);
 
-function doPost(e) {
-  return doGet(e);
-}
+      background:
+        radial-gradient(1200px 900px at 18% 12%, #061634 0%, transparent 55%),
+        radial-gradient(900px 700px at 88% 22%, #07122a 0%, transparent 52%),
+        radial-gradient(800px 650px at 55% 85%, #040a18 0%, transparent 60%),
+        linear-gradient(140deg, var(--navy-950) 0%, var(--navy-900) 40%, var(--navy-850) 100%);
 
-function handleLogin_(e) {
-  var id = getParam_(e, 'id') || getParam_(e, 'employeeId');
-  var pass = getParam_(e, 'pass') || getParam_(e, 'password');
-
-  if (!id || !pass) {
-    return { status: 'error', message: 'ID və parol tələb olunur' };
-  }
-
-  var sheet = getEmployeesSheet_();
-  var data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) {
-    return { status: 'not_found', message: 'İstifadəçi tapılmadı' };
-  }
-
-  var cols = detectColumns_(data[0]);
-  if (cols.id < 0) {
-    return { status: 'error', message: 'ID sütunu tapılmadı' };
-  }
-
-  for (var i = 1; i < data.length; i++) {
-    var row = data[i];
-    if (toText_(row[cols.id]) !== id) {
-      continue;
+      padding: calc(14px + var(--safe-top)) calc(14px + var(--safe-right)) calc(14px + var(--safe-bottom)) calc(14px + var(--safe-left));
+      overflow-x:hidden;
     }
 
-    if (cols.pass >= 0 && toText_(row[cols.pass]) !== pass) {
-      return { status: 'invalid_pass', message: 'Parol yanlışdır' };
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      opacity:.06;
+      background-image: var(--logo);
+      background-repeat:no-repeat;
+      background-position: center 18%;
+      background-size: 520px auto;
+      filter: drop-shadow(0 18px 70px rgba(0,0,0,.9));
+      transform: translateY(-12px);
     }
 
-    var fullName = cols.name >= 0 ? toText_(row[cols.name]) : '';
-    var firstName = cols.firstName >= 0 ? toText_(row[cols.firstName]) : '';
-    var lastName = cols.lastName >= 0 ? toText_(row[cols.lastName]) : '';
-    var fatherName = cols.fatherName >= 0 ? toText_(row[cols.fatherName]) : '';
+    .wrap{max-width:1060px;margin:0 auto;position:relative}
 
-    return {
-      status: 'success',
-      employee: {
-        id: id,
-        fullName: buildFullName_(fullName, firstName, lastName, fatherName),
-        firstName: firstName,
-        lastName: lastName,
-        fatherName: fatherName
+    .glass{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .page{ transition: opacity var(--speed) ease, transform var(--speed) ease; }
+    .pageHide{ opacity:0; transform: translateY(12px); pointer-events:none; }
+    .pageShow{ opacity:1; transform: translateY(0); pointer-events:auto; }
+
+    @keyframes slideUp {
+      from { transform: translateY(28px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    .slideUp{ animation: slideUp 520ms cubic-bezier(.2,.9,.2,1) both; }
+
+    .btn{
+      width:100%;
+      border:none;
+      color:white;
+      cursor:pointer;
+      padding:14px 16px;
+      border-radius: 16px;
+      font-weight:800;
+      letter-spacing:.2px;
+
+      background: linear-gradient(135deg, #0f2a55 0%, #1f55d9 52%, #103a9d 100%);
+      box-shadow: 0 14px 34px rgba(31,85,217,.20);
+
+      transition: transform var(--speed) ease, box-shadow var(--speed) ease, filter var(--speed) ease;
+      position:relative;
+      overflow:hidden;
+      touch-action: manipulation;
+    }
+    .btn::after{
+      content:"";
+      position:absolute; inset:-40% -60%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), transparent 45%);
+      transform: translateX(-35%) rotate(12deg);
+      transition: transform 520ms ease;
+      opacity:.45;
+    }
+    .btn:hover{ transform: translateY(-2px); box-shadow: 0 18px 52px rgba(31,85,217,.24); }
+    .btn:hover::after{ transform: translateX(0) rotate(12deg); }
+    .btn:active{ transform: translateY(0); filter:saturate(1.1); }
+    .btn:disabled{opacity:.65; cursor:not-allowed; transform:none; box-shadow:none;}
+
+    .btn-outline{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+    }
+
+    .btn-danger{
+      background: linear-gradient(135deg, #5a1515 0%, #ef4444 60%, #951010 100%);
+      box-shadow: 0 16px 44px rgba(239,68,68,.16);
+      width:auto;
+      padding:10px 14px;
+      border-radius: 999px;
+      font-weight:800;
+      cursor:pointer;
+      border:none;
+      color:#fff;
+      transition: transform var(--speed) ease;
+      touch-action: manipulation;
+    }
+    .btn-danger:active{ transform: translateY(1px); }
+
+    .login{
+      min-height: calc(100dvh - 28px);
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding-top: clamp(24px, 7vh, 72px);
+    }
+
+    .loginFrame{
+      width:100%;
+      max-width: 440px;
+      border-radius: 26px;
+      position: relative;
+      padding: 2px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transform: translateZ(0);
+      background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.018));
+      border: 1px solid rgba(255,255,255,.09);
+    }
+
+    .loginFrame .waterLine{
+      position:absolute;
+      inset:0;
+      border-radius: 26px;
+      pointer-events:none;
+      z-index: 2;
+
+      background:
+        linear-gradient(90deg,
+          rgba(255,255,255,0) 0%,
+          rgba(255,255,255,.18) 18%,
+          rgba(255,255,255,.75) 35%,
+          rgba(255,255,255,.18) 55%,
+          rgba(255,255,255,0) 70%) 0 0 / 180% 100%;
+
+      mask:
+        linear-gradient(#000,#000) content-box,
+        linear-gradient(#000,#000);
+      -webkit-mask:
+        linear-gradient(#000,#000) content-box,
+        linear-gradient(#000,#000);
+      padding: 2px;
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+
+      opacity: .80;
+      filter: blur(.25px) drop-shadow(0 0 18px rgba(255,255,255,.35));
+      animation: waterFlow 1.85s linear infinite;
+    }
+
+    .loginFrame::after{
+      content:"";
+      position:absolute;
+      inset:-18px;
+      border-radius: 40px;
+      pointer-events:none;
+      background:
+        radial-gradient(closest-side,
+          rgba(255,255,255,.18),
+          rgba(255,255,255,0) 62%);
+      filter: blur(14px);
+      opacity:.55;
+      z-index:1;
+    }
+
+    @keyframes waterFlow {
+      0%   { background-position: 0% 0; }
+      100% { background-position: 180% 0; }
+    }
+
+    .loginCard{
+      position: relative;
+      z-index: 3;
+      width:100%;
+      padding: 26px;
+      border-radius: 24px;
+
+      background:
+        radial-gradient(120% 140% at 15% 10%, rgba(255,255,255,.05), rgba(255,255,255,0) 58%),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.09);
+      backdrop-filter: blur(12px);
+
+      box-shadow:
+        0 24px 80px rgba(0,0,0,.55),
+        inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    .brand{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom: 14px; }
+    .brandBadge{
+      width:44px;height:44px;border-radius:14px;
+      background: linear-gradient(135deg, rgba(31,85,217,.22), rgba(255,255,255,.05));
+      border:1px solid rgba(255,255,255,.12);
+      display:grid;place-items:center;
+      box-shadow: var(--shadow2);
+      font-weight: 950;
+      letter-spacing: .6px;
+    }
+    .brandTitle{font-size: 22px;font-weight: 900;}
+    .brandSub{color:var(--muted); font-weight:700; font-size: 13px; text-align:center; margin-bottom: 18px;}
+
+    label{display:block; color:rgba(234,241,255,.92); font-weight:800; margin: 10px 0 6px;}
+    input{
+      width:100%;
+      padding: 14px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.045);
+      color: var(--text);
+      outline:none;
+      font-size: 16px;
+    }
+    input:focus{
+      border-color: rgba(31,85,217,.55);
+      background: rgba(255,255,255,.06);
+      box-shadow: 0 0 0 6px rgba(31,85,217,.12);
+    }
+
+    .error{
+      margin-top: 12px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(239,68,68,.35);
+      background: rgba(239,68,68,.12);
+      color: #ffd7d7;
+      display:none;
+      font-weight:700;
+    }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+      padding: 14px 16px;
+      margin-top: 10px;
+    }
+    .who{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      color:rgba(234,241,255,.95);
+      font-weight:800;
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.055);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 12px;
+    }
+    @media(min-width:900px){
+      .grid{ grid-template-columns: 1.55fr .95fr; align-items:start; }
+    }
+    .section{ padding: 18px; }
+    .sectionTitle{
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      letter-spacing:.2px;
+    }
+    .infoBox{
+      padding: 12px 14px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      color: rgba(234,241,255,.92);
+      margin-bottom: 14px;
+      line-height:1.35;
+    }
+
+    .ticketGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media(min-width:700px){
+      .ticketGrid{ grid-template-columns: repeat(4, 1fr); }
+    }
+    .ticket{
+      border-radius: 18px;
+      padding: 16px 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: 0 12px 35px rgba(0,0,0,.34);
+      cursor:pointer;
+      position:relative;
+      overflow:hidden;
+      user-select:none;
+      touch-action: pan-y;
+      transition: transform var(--speed) ease, box-shadow var(--speed) ease, border var(--speed) ease;
+    }
+    .ticket::before{
+      content:"";
+      position:absolute; inset:-60% -60%;
+      background: radial-gradient(circle at 30% 35%, rgba(31,85,217,.18), transparent 45%);
+      transform: rotate(10deg);
+      opacity:.9;
+    }
+    .ticket:hover{
+      transform: translateY(-4px);
+      border-color: rgba(31,85,217,.32);
+      box-shadow: 0 16px 48px rgba(0,0,0,.44);
+    }
+    .ticket:active{ transform: translateY(-1px) scale(.985); }
+    .ticket .icon{ font-size: 36px; position:relative; }
+    .ticket .name{ font-weight: 950; margin-top: 8px; position:relative; }
+    .ticket .time{ color: var(--muted); font-weight:700; font-size: 12px; margin-top: 4px; position:relative; }
+
+    .badge{
+      margin-top: 10px;
+      display:inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing:.3px;
+      border:1px solid rgba(255,255,255,.18);
+      position:relative;
+      background: rgba(255,255,255,.06);
+    }
+    .badge.ok{ border-color: rgba(34,197,94,.25); background: rgba(34,197,94,.10); }
+    .badge.used{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.10); }
+
+    .modal{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.78);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 16px;
+      z-index: 1000;
+      overscroll-behavior: contain;
+      touch-action: none;
+    }
+    .modal.show{ display:flex !important; }
+    .modalCard{
+      width:100%;
+      max-width: 430px;
+      padding: 18px;
+      border-radius: 22px;
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(6,12,22,.92), rgba(4,8,16,.92));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      text-align:center;
+      animation: slideUp 320ms cubic-bezier(.2,.9,.2,1) both;
+    }
+    .modalTitle{ font-size: 18px; font-weight: 950; }
+    .modalSub{ margin-top: 8px; color: var(--muted); font-weight:700; }
+
+    .qrBox{
+      width: 250px; height: 250px;
+      margin: 16px auto 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.97);
+      display:grid; place-items:center;
+      box-shadow: 0 16px 44px rgba(0,0,0,.50);
+      overflow:hidden;
+    }
+    .qrBox img{ width:220px; height:220px; image-rendering: pixelated; }
+    .qrStatusText{
+      width:100%;height:100%;display:grid;place-items:center;color:#0b1732;
+      font-weight: 950;letter-spacing:.3px;font-size: 18px;
+      background: radial-gradient(circle at 30% 25%, rgba(0,0,0,.10), transparent 55%);
+      border-radius: 14px;
+    }
+
+    .stars{display:flex;justify-content:center;gap:10px;margin:12px 0 10px;}
+    .starBtn{
+      font-size: 32px;background:none;border:none;cursor:pointer;
+      color: rgba(255,255,255,.28);
+      transition: transform var(--speed) ease, color var(--speed) ease;
+      touch-action: manipulation;
+    }
+    .starBtn:active{ transform: translateY(1px) scale(.98); }
+    .starBtn.active{ color: #ffbf2f; text-shadow: 0 10px 26px rgba(255,191,47,.25); }
+
+    textarea{
+      width:100%;
+      min-height: 120px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.07);
+      color: var(--text);
+      outline:none;
+      resize: vertical;
+      font-size: 15px;
+    }
+
+    .footer{
+      text-align:center;
+      margin: 16px 0 6px;
+      color: rgba(234,241,255,.78);
+      font-weight: 900;
+      letter-spacing:.5px;
+    }
+
+    #qrPreRender{
+      position: fixed;
+      left: -99999px;
+      top: -99999px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body style="--logo: url('');">
+  <div class="wrap">
+
+    <!-- LOGIN -->
+    <div class="login page pageShow slideUp" id="loginPage">
+      <div class="loginFrame">
+        <div class="waterLine"></div>
+        <div class="loginCard">
+          <div class="brand">
+            <div class="brandBadge">GHG</div>
+            <div>
+              <div class="brandTitle">GHG Yemək</div>
+              <div class="brandSub">Elektron talon sistemi</div>
+            </div>
+          </div>
+
+          <div class="brandSub" style="margin-top:-6px;">İşçi ID və 4 rəqəmli parol ilə daxil olun</div>
+
+          <form onsubmit="handleLogin(event)">
+            <label>İşçi ID</label>
+            <input id="employeeId" type="text" inputmode="numeric" autocomplete="username" required />
+
+            <label>Parol (4 rəqəm)</label>
+            <input id="employeePass" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" required />
+
+            <div style="height:12px"></div>
+            <button class="btn" id="loginBtn" type="submit">Daxil ol</button>
+
+            <div class="error" id="errorMsg"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- APP -->
+    <div id="mainApp" class="page pageHide" style="display:none;">
+      <div class="glass topbar">
+        <div class="who">
+          <span class="chip">👤 <span id="displayName"></span></span>
+          <span class="chip">🆔 <span id="displayId"></span></span>
+          <span class="chip" style="color:var(--muted);" id="dateInfo"></span>
+        </div>
+        <button class="btn-danger" onclick="logout()">Çıxış</button>
+      </div>
+
+      <div class="grid">
+        <div class="glass section">
+          <div class="sectionTitle">🎫 Talonlarım</div>
+          <div class="infoBox">
+            <b>Qaydalar:</b> Hər talon üçün hər gün yeni QR yaranır. Talonlar bir-birini deaktiv etmir — hamısı aktiv qalır.
+          </div>
+          <div class="ticketGrid" id="ticketContainer"></div>
+        </div>
+
+        <div class="glass section">
+          <div class="sectionTitle">⭐ Yemək qiymətləndirməsi</div>
+          <div class="infoBox" style="margin-bottom:12px;">
+            1–5 ulduz seçin və qısa səbəb yazın. Məlumatlar “Yemək qiymətləndirməsi” sheetinə yazılacaq.
+          </div>
+          <button class="btn btn-outline" onclick="openRatingModal()">🍽️ Yeməyi qiymətləndir</button>
+        </div>
+      </div>
+
+      <div class="footer">By CED</div>
+    </div>
+  </div>
+
+  <!-- QR MODAL -->
+  <div class="modal" id="qrModal" onclick="closeQRModal(event)">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <div class="modalTitle">🎫 Talonunuz hazırdır</div>
+      <div class="modalSub" id="qrTicketInfo"></div>
+      <div class="qrBox"><div id="modalQR"></div></div>
+      <div class="modalSub" style="margin-bottom:12px;">Kafeteryada skanerə göstərin</div>
+      <button class="btn btn-outline" onclick="closeQRModal()">Bağla</button>
+    </div>
+  </div>
+
+  <!-- RATING MODAL -->
+  <div class="modal" id="ratingModal" onclick="closeRatingModal(event)">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <div class="modalTitle">⭐ Yemək qiymətləndirmə</div>
+      <div class="modalSub">1–5 ulduz seçin və səbəb yazın</div>
+
+      <div class="stars" id="ratingStars"></div>
+      <textarea id="ratingReason" placeholder="Məsələn: Yeməklər əladır."></textarea>
+
+      <div style="height:12px"></div>
+      <button class="btn" id="ratingSubmitBtn" onclick="submitRating()">Göndər</button>
+      <div style="height:10px"></div>
+      <button class="btn btn-outline" onclick="closeRatingModal()">Bağla</button>
+    </div>
+  </div>
+
+  <!-- OFFSCREEN QR RENDER -->
+  <div id="qrPreRender"></div>
+
+  <script>
+    /************ CONFIG ************/
+    // ✅ BURAYA APPS SCRIPT WEB APP URL YAZILIR (Deploy edəndən sonra)
+    const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxciyNELblomqxmyydlJtM8fv6HQOwPL2wCseBqBFmI3Msk5cxSdyDxzZupIM5fDIOT/exec';
+
+    const LOGO_URL = ''; // istəsən logo linki
+    if (LOGO_URL) document.body.style.setProperty('--logo', `url('${LOGO_URL}')`);
+
+    const TICKET_TYPES = [
+      { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00–10:00', code: 'S' },
+      { id: 'lunch',     name: 'Günorta Yeməyi', icon: '🌞', time: '12:00–15:00', code: 'G' },
+      { id: 'dinner',    name: 'Axşam Yeməyi',   icon: '🌙', time: '18:00–21:00', code: 'A' },
+      { id: 'dry',       name: 'Quru Talon',     icon: '📦', time: 'Hər zaman',   code: 'Q' }
+    ];
+
+    let currentEmployee = null;
+    let selectedRating = 0;
+    let usedMap = {};
+
+    // QR caches
+    let qrTextCache = {};   // key -> qrText
+    let qrImageCache = {};  // key -> dataURL
+
+    // Swipe/scroll guard
+    let isTouchScrolling = false;
+    let touchStartY = 0;
+
+    /************ Helpers ************/
+    function openModal(id){
+      document.getElementById(id).classList.add('show');
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    }
+    function hideModal(id){
+      document.getElementById(id).classList.remove('show');
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }
+
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function todayStr(){
+      const d = new Date();
+      return `${pad2(d.getDate())}.${pad2(d.getMonth()+1)}.${d.getFullYear()}`;
+    }
+
+    function showError(msg){
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+    function clearError(){
+      const el = document.getElementById('errorMsg');
+      el.textContent = '';
+      el.style.display = 'none';
+    }
+
+    function showLogin(){
+      const login = document.getElementById('loginPage');
+      const app = document.getElementById('mainApp');
+
+      app.classList.remove('pageShow');
+      app.classList.add('pageHide');
+      setTimeout(()=>{ app.style.display = 'none'; }, 220);
+
+      login.style.display = 'flex';
+      login.classList.remove('pageHide');
+      login.classList.add('pageShow','slideUp');
+
+      document.getElementById('employeeId').value = localStorage.getItem('ghg_login_id') || '';
+      document.getElementById('employeePass').value = localStorage.getItem('ghg_login_pass') || '';
+    }
+
+    function showApp(){
+      const login = document.getElementById('loginPage');
+      const app = document.getElementById('mainApp');
+
+      login.classList.remove('pageShow');
+      login.classList.add('pageHide');
+      setTimeout(()=>{ login.style.display = 'none'; }, 220);
+
+      app.style.display = 'block';
+      app.classList.remove('pageHide');
+      app.classList.add('pageShow');
+    }
+
+    function setQRBoxHTML(html){
+      document.getElementById('modalQR').innerHTML = html;
+    }
+
+    /************ JSONP ************/
+    function fetchJSONP(url) {
+      return new Promise((resolve, reject) => {
+        const cb = 'cb_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+        const script = document.createElement('script');
+
+        window[cb] = (data) => {
+          delete window[cb];
+          script.remove();
+          resolve(data);
+        };
+
+        const t = setTimeout(() => {
+          if (window[cb]) delete window[cb];
+          script.remove();
+          reject(new Error('Timeout'));
+        }, 12000);
+
+        script.onload = () => clearTimeout(t);
+        script.onerror = () => { clearTimeout(t); reject(new Error('Load error')); };
+
+        script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
+        document.head.appendChild(script);
+      });
+    }
+
+    /************ QR Generator ************/
+    function generateDailyQR(type) {
+      const date = todayStr();
+      const base = `${currentEmployee.id}_${date}_${type.code}_${type.id}`;
+      let hash = 0;
+      for (let i = 0; i < base.length; i++) {
+        hash = ((hash << 5) - hash) + base.charCodeAt(i);
+        hash |= 0;
+      }
+      const hashCode = Math.abs(hash % 9000 + 1000);
+      // Scanner backend bunu parse edir:
+      // GHG|empId|code|dd.mm.yyyy|hashCode|typeId
+      return `GHG|${currentEmployee.id}|${type.code}|${date}|${hashCode}|${type.id}`;
+    }
+
+    function keyFor(typeId){
+      return `${currentEmployee.id}_${todayStr()}_${typeId}`;
+    }
+
+    function prewarmQRText(){
+      TICKET_TYPES.forEach(t=>{
+        const k = keyFor(t.id);
+        if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(t);
+      });
+    }
+
+    function renderQRToDataURL(text){
+      return new Promise((resolve)=>{
+        const pre = document.getElementById('qrPreRender');
+        const holder = document.createElement('div');
+        pre.appendChild(holder);
+
+        new QRCode(holder, {
+          text,
+          width: 220,
+          height: 220,
+          correctLevel: QRCode.CorrectLevel.L
+        });
+
+        requestAnimationFrame(()=>{
+          try{
+            const canvas = holder.querySelector('canvas');
+            if (canvas) {
+              const url = canvas.toDataURL('image/png');
+              holder.remove();
+              return resolve(url);
+            }
+            const img = holder.querySelector('img');
+            if (img) {
+              if (img.complete && img.naturalWidth) {
+                const url = img.src;
+                holder.remove();
+                return resolve(url);
+              }
+              img.onload = () => { const url = img.src; holder.remove(); resolve(url); };
+              img.onerror = () => { holder.remove(); resolve(null); };
+              return;
+            }
+          }catch(e){}
+          holder.remove();
+          resolve(null);
+        });
+      });
+    }
+
+    // PRIORITY pre-render: meals first so they are instant
+    async function preRenderPriorityQRImages(){
+      if (!currentEmployee) return;
+
+      const priority = ['breakfast','lunch','dinner','dry'];
+      for (const id of priority){
+        const t = TICKET_TYPES.find(x=>x.id===id);
+        if (!t) continue;
+
+        const k = keyFor(t.id);
+        if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(t);
+        if (qrImageCache[k]) continue;
+
+        const url = await renderQRToDataURL(qrTextCache[k]);
+        if (url) qrImageCache[k] = url;
+
+        await new Promise(r=>setTimeout(r, 0));
+      }
+    }
+
+    /************ Login ************/
+    async function handleLogin(e){
+      e.preventDefault();
+      clearError();
+
+      const id = document.getElementById('employeeId').value.trim();
+      const pass = document.getElementById('employeePass').value.trim();
+
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true;
+      btn.textContent = 'Yoxlanılır...';
+
+      try{
+        const url = `${SHEET_API_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}`;
+        const data = await fetchJSONP(url);
+
+        if (data.status === 'success') {
+          currentEmployee = { id, fullName: (data.employee && data.employee.fullName) ? data.employee.fullName : '' };
+
+          localStorage.setItem('ghg_login_id', id);
+          localStorage.setItem('ghg_login_pass', pass);
+          localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
+
+          usedMap = {};
+          qrTextCache = {};
+          qrImageCache = {};
+          document.getElementById('qrPreRender').innerHTML = '';
+
+          showApp();
+
+          document.getElementById('displayName').textContent = currentEmployee.fullName;
+          document.getElementById('displayId').textContent = currentEmployee.id;
+          document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
+
+          await loadUsedStatuses();
+          renderTickets();
+
+          prewarmQRText();
+          preRenderPriorityQRImages();
+        } else if (data.status === 'invalid_pass') {
+          showError('❌ Yanlış parol!');
+        } else if (data.status === 'not_found') {
+          showError('❌ İşçi tapılmadı!');
+        } else {
+          showError('❌ Xəta: ' + (data.message || 'Naməlum'));
+        }
+      }catch(err){
+        console.error(err);
+        showError('❌ Bağlantı xətası!');
+      }finally{
+        btn.disabled = false;
+        btn.textContent = 'Daxil ol';
+      }
+    }
+
+    function logout(){
+      localStorage.removeItem('ghg_employee');
+      currentEmployee = null;
+      selectedRating = 0;
+      usedMap = {};
+      qrTextCache = {};
+      qrImageCache = {};
+      document.getElementById('qrPreRender').innerHTML = '';
+
+      hideModal('qrModal');
+      hideModal('ratingModal');
+      setQRBoxHTML('');
+
+      showLogin();
+    }
+
+    /************ Used status ************/
+    async function loadUsedStatuses(){
+      usedMap = {};
+      const date = todayStr();
+      const checks = TICKET_TYPES.map(async (t) => {
+        try{
+          const url = `${SHEET_API_URL}?action=checkScanStatus&id=${encodeURIComponent(currentEmployee.id)}&ticketType=${encodeURIComponent(t.id)}&date=${encodeURIComponent(date)}`;
+          const res = await fetchJSONP(url);
+
+          // backend: dry üçün used yalnız 2 təsdiqdən sonra true olur
+          usedMap[t.id] = (res.status === 'success' && !!res.used);
+        }catch(e){
+          usedMap[t.id] = false;
+        }
+      });
+      await Promise.all(checks);
+    }
+
+    /************ Tickets ************/
+    function renderTickets(){
+      const container = document.getElementById('ticketContainer');
+      container.innerHTML = '';
+
+      TICKET_TYPES.forEach(type => {
+        const used = !!usedMap[type.id];
+        const card = document.createElement('div');
+        card.className = 'ticket';
+
+        card.addEventListener('click', () => {
+          if (isTouchScrolling) return;
+          showTicket(type);
+        });
+
+        card.innerHTML = `
+          <div class="icon">${type.icon}</div>
+          <div class="name">${type.name}</div>
+          <div class="time">${type.time}</div>
+          <div class="badge ${used ? 'used' : 'ok'}">
+            ${used ? 'İSTİFADƏ EDİLDİ' : 'AKTİV'}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function showTicket(type){
+      if (!currentEmployee) return;
+
+      document.getElementById('qrTicketInfo').textContent =
+        `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
+
+      openModal('qrModal');
+
+      const k = keyFor(type.id);
+      if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(type);
+
+      if (qrImageCache[k]) {
+        setQRBoxHTML(`<img alt="QR" src="${qrImageCache[k]}">`);
+        return;
+      }
+
+      setQRBoxHTML(`<div class="qrStatusText">Yüklənir...</div>`);
+      const url = await renderQRToDataURL(qrTextCache[k]);
+      if (url) qrImageCache[k] = url;
+      setQRBoxHTML(url ? `<img alt="QR" src="${url}">` : `<div class="qrStatusText">Xəta</div>`);
+    }
+
+    function closeQRModal(e){
+      if (!e || e.target.id === 'qrModal') {
+        hideModal('qrModal');
+        setQRBoxHTML('');
+      }
+    }
+
+    /************ Rating ************/
+    function renderRatingStars(){
+      const wrap = document.getElementById('ratingStars');
+      wrap.innerHTML = '';
+      for(let i=1;i<=5;i++){
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'starBtn ' + (i <= selectedRating ? 'active' : '');
+        b.innerHTML = '★';
+        b.onclick = () => { selectedRating = i; renderRatingStars(); };
+        wrap.appendChild(b);
+      }
+    }
+
+    function openRatingModal(){
+      if (!currentEmployee) return;
+      selectedRating = 0;
+      document.getElementById('ratingReason').value = '';
+      renderRatingStars();
+      openModal('ratingModal');
+    }
+
+    function closeRatingModal(e){
+      if (!e || e.target.id === 'ratingModal') hideModal('ratingModal');
+    }
+
+    async function submitRating(){
+      const reason = document.getElementById('ratingReason').value.trim();
+      const btn = document.getElementById('ratingSubmitBtn');
+
+      if (!currentEmployee) return alert('Əvvəlcə giriş edin.');
+      if (!selectedRating) return alert('Zəhmət olmasa ulduz seçin.');
+      if (!reason) return alert('Səbəbi yazın.');
+
+      btn.disabled = true;
+      btn.textContent = 'Göndərilir...';
+
+      try{
+        const url = `${SHEET_API_URL}?action=submitRating&employeeId=${encodeURIComponent(currentEmployee.id)}&ratingStars=${encodeURIComponent(selectedRating)}&ratingText=${encodeURIComponent(reason)}`;
+        const res = await fetchJSONP(url);
+
+        if (res.status === 'success'){
+          alert('Qiymətləndirmə göndərildi ✅');
+          closeRatingModal();
+        } else {
+          alert(res.message || 'Göndərilmədi');
+        }
+      }catch(err){
+        console.error(err);
+        alert('Bağlantı xətası!');
+      }finally{
+        btn.disabled = false;
+        btn.textContent = 'Göndər';
+      }
+    }
+
+    /************ Scroll vs tap guard (mobile) ************/
+    document.addEventListener('touchstart', (e)=>{
+      isTouchScrolling = false;
+      touchStartY = (e.touches && e.touches[0]) ? e.touches[0].clientY : 0;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e)=>{
+      const y = (e.touches && e.touches[0]) ? e.touches[0].clientY : 0;
+      if (Math.abs(y - touchStartY) > 8) isTouchScrolling = true;
+    }, { passive: true });
+
+    document.addEventListener('touchend', ()=>{
+      setTimeout(()=>{ isTouchScrolling = false; }, 120);
+    }, { passive: true });
+
+    /************ INIT ************/
+    window.onload = async () => {
+      document.getElementById('employeeId').value = localStorage.getItem('ghg_login_id') || '';
+      document.getElementById('employeePass').value = localStorage.getItem('ghg_login_pass') || '';
+
+      const savedEmployee = localStorage.getItem('ghg_employee');
+      if (savedEmployee){
+        currentEmployee = JSON.parse(savedEmployee);
+        showApp();
+
+        document.getElementById('displayName').textContent = currentEmployee.fullName;
+        document.getElementById('displayId').textContent = currentEmployee.id;
+        document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
+
+        await loadUsedStatuses();
+        renderTickets();
+
+        prewarmQRText();
+        preRenderPriorityQRImages();
+      } else {
+        showLogin();
       }
     };
-  }
-
-  return { status: 'not_found', message: 'İstifadəçi tapılmadı' };
-}
-
-function handleSubmitRating_(e) {
-  var employeeId = getParam_(e, 'employeeId') || getParam_(e, 'id');
-  var fullName = getParam_(e, 'fullName');
-  var ratingText = getParam_(e, 'ratingText') || getParam_(e, 'reason');
-  var ratingStars = Number(getParam_(e, 'ratingStars') || getParam_(e, 'rating'));
-
-  if (!employeeId) {
-    return { status: 'error', message: 'employeeId boşdur' };
-  }
-  if (!ratingText) {
-    return { status: 'error', message: 'Səbəb boşdur' };
-  }
-  if (!ratingStars || ratingStars < 1 || ratingStars > 5) {
-    return { status: 'error', message: 'Ulduz 1-5 arası olmalıdır' };
-  }
-
-  var employeesSheet = getEmployeesSheet_();
-  var employeeData = findEmployeeById_(employeesSheet, employeeId);
-  var displayName = fullName || employeeData.displayName;
-
-  var ratingSheet = getOrCreateRatingSheet_(employeesSheet.getParent());
-  ensureRatingHeaders_(ratingSheet);
-
-  var headers = ratingSheet.getRange(1, 1, 1, Math.max(1, ratingSheet.getLastColumn())).getValues()[0];
-  var map = headerMap_(headers);
-  var row = ratingSheet.getLastRow() + 1;
-
-  writeByAliases_(ratingSheet, row, map, ['id', 'i̇d', 'əməkdaş id', 'employee id'], employeeId);
-  writeByAliases_(ratingSheet, row, map, ['ad və soyad', 'ad soyad', 'full name'], displayName);
-  writeByAliases_(ratingSheet, row, map, ['ulduzla qiymətləndirmə', 'ulduzla qiymetlendirme', 'ulduz'], ratingStars);
-  writeByAliases_(ratingSheet, row, map, ['yemək qiymətləndirmə', 'yemek qiymetlendirme', 'qiymətləndirmə mətni'], ratingText);
-
-  return { status: 'success', message: 'Qiymətləndirmə əlavə edildi' };
-}
-
-function handleScan_(qrData) {
-  if (!qrData) {
-    return { status: 'error', message: 'QR data boşdur' };
-  }
-
-  var parsed = parseQR_(qrData);
-  if (!parsed) {
-    return { status: 'error', message: 'Yanlış QR formatı' };
-  }
-
-  if (parsed.dateKey !== todayDateKey_()) {
-    return {
-      status: 'error',
-      speak: true,
-      message: 'Bu QR bu günə aid deyil'
-    };
-  }
-
-  var scannerSheet = getScannerSheet_();
-  var rows = scannerSheet.getDataRange().getValues();
-  var duplicate = false;
-
-  for (var i = 1; i < rows.length; i++) {
-    if (
-      toText_(rows[i][2]) === parsed.dateKey &&
-      toText_(rows[i][3]) === parsed.empId &&
-      toText_(rows[i][6]) === parsed.typeId &&
-      toText_(rows[i][8]) === 'Təsdiqləndi'
-    ) {
-      duplicate = true;
-      break;
-    }
-  }
-
-  var now = new Date();
-  var statusText = duplicate ? 'Təkrar cəhd' : 'Təsdiqləndi';
-  var employee = findEmployeeById_(getEmployeesSheet_(), parsed.empId);
-
-  scannerSheet.appendRow([
-    Utilities.formatDate(now, 'Asia/Baku', 'dd.MM.yyyy'),
-    Utilities.formatDate(now, 'Asia/Baku', 'HH:mm:ss'),
-    parsed.dateKey,
-    parsed.empId,
-    employee.displayName || 'Naməlum əməkdaş',
-    ticketTypeName_(parsed.typeCode),
-    parsed.typeId,
-    qrData,
-    statusText
-  ]);
-
-  if (duplicate) {
-    return { status: 'warning', message: 'Təkrar cəhd' };
-  }
-
-  return { status: 'success', message: 'Təsdiqləndi' };
-}
-
-function handleCheckScanStatus_(e) {
-  var empId = getParam_(e, 'id');
-  var ticketType = getParam_(e, 'ticketType');
-  var dateKey = getParam_(e, 'date') || todayDateKey_();
-
-  if (!empId || !ticketType) {
-    return { status: 'error', used: false, message: 'Parametrlər natamamdır' };
-  }
-
-  var scannerSheet = getScannerSheet_();
-  var rows = scannerSheet.getDataRange().getValues();
-
-  for (var i = 1; i < rows.length; i++) {
-    if (
-      toText_(rows[i][2]) === dateKey &&
-      toText_(rows[i][3]) === empId &&
-      toText_(rows[i][6]) === ticketType &&
-      toText_(rows[i][8]) === 'Təsdiqləndi'
-    ) {
-      return { status: 'success', used: true };
-    }
-  }
-
-  return { status: 'success', used: false };
-}
-
-function parseQR_(qrData) {
-  var parts = String(qrData || '').split('|');
-  if (parts.length < 6 || parts[0] !== 'GHG') {
-    return null;
-  }
-
-  return {
-    empId: toText_(parts[1]),
-    typeCode: toText_(parts[2]),
-    dateKey: toText_(parts[3]),
-    hash: toText_(parts[4]),
-    typeId: toText_(parts[5])
-  };
-}
-
-function getEmployeesSpreadsheet_() {
-  return openSpreadsheetById_(EMPLOYEES_FILE_ID, 'Employees');
-}
-
-function getScannerSpreadsheet_() {
-  return openSpreadsheetById_(SCANNER_FILE_ID, 'Scanner');
-}
-
-function openSpreadsheetById_(sheetId, label) {
-  var id = toText_(sheetId);
-  if (!id) {
-    throw new Error(label + ' fayl ID-si təyin edilməyib');
-  }
-
-  try {
-    return SpreadsheetApp.openById(id);
-  } catch (e) {
-    throw new Error(label + ' faylı tapılmadı və ya giriş icazəsi yoxdur (ID: ' + id + ')');
-  }
-}
-
-function getEmployeesSheet_() {
-  var preferredSheets = ['Cadvel1', 'Cədvəl1', 'Employees', 'Employee'];
-  var candidates = [];
-
-  // 1) Əsas employee faylını yoxla.
-  try {
-    candidates.push(getEmployeesSpreadsheet_());
-  } catch (e) {
-    // employee faylı açılmırsa fallback-lərə keç.
-  }
-
-  // 2) Bəzi quraşdırmalarda employee cədvəli scanner faylında saxlanılır.
-
-  var candidates = [getEmployeesSpreadsheet_()];
-
-  // Bəzi quraşdırmalarda employee cədvəli scanner faylında saxlanılır.
- main
-  if (toText_(SCANNER_FILE_ID) && SCANNER_FILE_ID !== EMPLOYEES_FILE_ID) {
-    try {
-      candidates.push(getScannerSpreadsheet_());
-    } catch (e) {
- codex/fix-this-issue-yo76xk
-      // scanner faylı açılmasa belə digər fallback-lərlə davam et.
-    }
-  }
-
-  // 3) Son fallback: bu scriptin bağlı olduğu aktiv spreadsheet.
-  try {
-    candidates.push(SpreadsheetApp.getActiveSpreadsheet());
-  } catch (e) {
-    // aktiv spreadsheet yoxdursa sadəcə mövcud namizədlərlə davam et.
-  }
-
-
-      // scanner faylı açılmasa belə əsas employee faylı ilə davam et.
-    }
-  }
-
- main
-  for (var i = 0; i < candidates.length; i++) {
-    var sheet = findSheetByNames_(candidates[i], preferredSheets);
-    if (sheet) {
-      return sheet;
-    }
-  }
-
- codex/fix-this-issue-yo76xk
-  throw new Error('Employees cədvəli tapılmadı (Cadvel1/Cədvəl1/Employees)');
-
-  throw new Error('Employees cədvəli tapılmadı (Cadvel1/Cədvəl1)');
- main
-}
-
-function getOrCreateRatingSheet_(ss) {
-  var sheet = ss.getSheetByName('Yemək qiymətləndirməsi') || ss.getSheetByName('Yemek qiymetlendirmesi');
-  if (!sheet) {
-    sheet = ss.insertSheet('Yemək qiymətləndirməsi');
-  }
-  return sheet;
-}
-
-function getScannerSheet_() {
-  var ss = getScannerSpreadsheet_();
-  var sheet = ss.getSheetByName('Scanner');
-  if (!sheet) {
-    sheet = ss.insertSheet('Scanner');
-    sheet.appendRow(['Tarix', 'Saat', 'DateKey', 'Əməkdaş ID', 'Ad Soyad Ata adı', 'Talon Növü', 'TicketTypeId', 'Talon ID', 'Status']);
-  }
-  return sheet;
-}
-
-function findSheetByNames_(ss, names) {
-  if (!ss) return null;
-
-  for (var i = 0; i < names.length; i++) {
-    var byName = ss.getSheetByName(names[i]);
-    if (byName) {
-      return byName;
-    }
-  }
-
-  return null;
-}
-
-function ensureRatingHeaders_(sheet) {
-  var required = ['İD', 'Ad və Soyad', 'Ulduzla qiymətləndirmə', 'Yemək qiymətləndirmə'];
-
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(required);
-    return;
-  }
-
-  var headers = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0];
-  var normalized = [];
-  for (var i = 0; i < headers.length; i++) {
-    normalized.push(normalize_(headers[i]));
-  }
-
-  for (var r = 0; r < required.length; r++) {
-    var key = normalize_(required[r]);
-    if (normalized.indexOf(key) === -1) {
-      sheet.getRange(1, sheet.getLastColumn() + 1).setValue(required[r]);
-      normalized.push(key);
-    }
-  }
-}
-
-function findEmployeeById_(sheet, employeeId) {
-  var data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) {
-    return { displayName: '', fullName: '', firstName: '', lastName: '', fatherName: '' };
-  }
-
-  var cols = detectColumns_(data[0]);
-  for (var i = 1; i < data.length; i++) {
-    var row = data[i];
-    if (cols.id < 0 || toText_(row[cols.id]) !== employeeId) {
-      continue;
-    }
-
-    var fullName = cols.name >= 0 ? toText_(row[cols.name]) : '';
-    var firstName = cols.firstName >= 0 ? toText_(row[cols.firstName]) : '';
-    var lastName = cols.lastName >= 0 ? toText_(row[cols.lastName]) : '';
-    var fatherName = cols.fatherName >= 0 ? toText_(row[cols.fatherName]) : '';
-
-    return {
-      displayName: buildFullName_(fullName, firstName, lastName, fatherName),
-      fullName: fullName,
-      firstName: firstName,
-      lastName: lastName,
-      fatherName: fatherName
-    };
-  }
-
-  return { displayName: '', fullName: '', firstName: '', lastName: '', fatherName: '' };
-}
-
-function detectColumns_(headers) {
-  return {
-    id: findColumn_(headers, ['id', 'i̇d', 'əməkdaş id', 'employee id']),
-    name: findColumn_(headers, ['ad və soyad', 'ad soyad', 'full name']),
-    firstName: findColumn_(headers, ['ad', 'first name']),
-    lastName: findColumn_(headers, ['soyad', 'last name']),
-    fatherName: findColumn_(headers, ['ata adı', 'ata adi', 'father name']),
-    pass: findColumn_(headers, ['parol', 'password'])
-  };
-}
-
-function findColumn_(headers, aliases) {
-  var normalizedHeaders = [];
-  for (var i = 0; i < headers.length; i++) {
-    normalizedHeaders.push(normalize_(headers[i]));
-  }
-
-  for (var a = 0; a < aliases.length; a++) {
-    var alias = normalize_(aliases[a]);
-    for (var c = 0; c < normalizedHeaders.length; c++) {
-      if (normalizedHeaders[c] === alias || normalizedHeaders[c].indexOf(alias) !== -1 || alias.indexOf(normalizedHeaders[c]) !== -1) {
-        return c;
-      }
-    }
-  }
-  return -1;
-}
-
-function headerMap_(headers) {
-  var map = {};
-  for (var i = 0; i < headers.length; i++) {
-    map[normalize_(headers[i])] = i + 1;
-  }
-  return map;
-}
-
-function writeByAliases_(sheet, row, map, aliases, value) {
-  for (var i = 0; i < aliases.length; i++) {
-    var col = map[normalize_(aliases[i])];
-    if (col) {
-      sheet.getRange(row, col).setValue(value);
-      return true;
-    }
-  }
-  return false;
-}
-
-function buildFullName_(fullName, firstName, lastName, fatherName) {
-  if (fullName) {
-    return fullName;
-  }
-
-  var parts = [];
-  if (firstName) parts.push(firstName);
-  if (lastName) parts.push(lastName);
-  if (fatherName) parts.push(fatherName + ' oğlu');
-
-  return parts.join(' ').trim();
-}
-
-function ticketTypeName_(code) {
-  var types = {
-    S: 'Səhər Yeməyi',
-    G: 'Günorta Yeməyi',
-    A: 'Axşam Yeməyi',
-    Q: 'Quru Talon'
-  };
-  return types[code] || 'Naməlum';
-}
-
-function normalize_(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/ı/g, 'i')
-    .replace(/ə/g, 'e')
-    .replace(/ö/g, 'o')
-    .replace(/ü/g, 'u')
-    .replace(/ş/g, 's')
-    .replace(/ç/g, 'c')
-    .replace(/ğ/g, 'g')
-    .trim();
-}
-
-function todayDateKey_() {
-  return Utilities.formatDate(new Date(), 'Asia/Baku', 'yyyyMMdd');
-}
-
-function getParam_(e, key) {
-  if (!e || !e.parameter || e.parameter[key] === undefined || e.parameter[key] === null) {
-    return '';
-  }
-  return String(e.parameter[key]).trim();
-}
-
-function toText_(value) {
-  return String(value || '').trim();
-}
-
-function sendJSONP_(payload, callback) {
-  var text = JSON.stringify(payload);
-  if (callback) {
-    return ContentService.createTextOutput(callback + '(' + text + ')')
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  return ContentService.createTextOutput(text)
-    .setMimeType(ContentService.MimeType.JSON);
-}
+  </script>
+</body>
+</html>
