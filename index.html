@@ -90,10 +90,8 @@
       border-radius: 16px;
       font-weight:800;
       letter-spacing:.2px;
-
       background: linear-gradient(135deg, #0f2a55 0%, #1f55d9 52%, #103a9d 100%);
       box-shadow: 0 14px 34px rgba(31,85,217,.20);
-
       transition: transform var(--speed) ease, box-shadow var(--speed) ease, filter var(--speed) ease;
       position:relative;
       overflow:hidden;
@@ -326,7 +324,9 @@
       position:relative;
       overflow:hidden;
       user-select:none;
-      touch-action: manipulation;
+
+      /* SCROLL rahat olsun */
+      touch-action: pan-y;
       transition: transform var(--speed) ease, box-shadow var(--speed) ease, border var(--speed) ease;
     }
     .ticket::before{
@@ -359,7 +359,6 @@
     }
     .badge.ok{ border-color: rgba(34,197,94,.25); background: rgba(34,197,94,.10); }
     .badge.used{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.10); }
-    .badge.dup{ border-color: rgba(250,204,21,.28); background: rgba(250,204,21,.10); }
 
     .modal{
       position:fixed; inset:0;
@@ -369,6 +368,8 @@
       justify-content:center;
       padding: 16px;
       z-index: 1000;
+      overscroll-behavior: contain;
+      touch-action: none;
     }
     .modal.show{ display:flex !important; }
     .modalCard{
@@ -396,10 +397,7 @@
       box-shadow: 0 16px 44px rgba(0,0,0,.50);
       overflow:hidden;
     }
-    .qrBox img{
-      width:220px; height:220px;
-      image-rendering: pixelated;
-    }
+    .qrBox img{ width:220px; height:220px; }
     .qrStatusText{
       width:100%;
       height:100%;
@@ -411,7 +409,19 @@
       font-size: 18px;
       background: radial-gradient(circle at 30% 25%, rgba(0,0,0,.10), transparent 55%);
       border-radius: 14px;
+      padding: 12px;
+      text-align:center;
+      line-height:1.25;
     }
+
+    .confirmRow{
+      display:flex;
+      gap:10px;
+      margin-top: 12px;
+    }
+    .confirmRow .btn{ padding:12px 14px; border-radius: 14px; }
+    .confirmRow .btn-outline{ flex: 1; }
+    .confirmRow .btn-primary{ flex: 1; }
 
     .stars{display:flex;justify-content:center;gap:10px;margin:12px 0 10px;}
     .starBtn{
@@ -447,7 +457,6 @@
       letter-spacing:.5px;
     }
 
-    /* Hidden QR pre-render area */
     #qrPreRender{
       position: fixed;
       left: -99999px;
@@ -576,13 +585,29 @@
     let selectedRating = 0;
     let usedMap = {};
 
-    // Speed: store ready-to-show QR images (dataURL)
+    // QR caches
     let qrTextCache = {};   // key -> qrText
     let qrImageCache = {};  // key -> dataURL
 
+    // Tap vs scroll guard
+    const TAP_MOVE_THRESHOLD = 10; // px
+    let tapStartX = 0, tapStartY = 0, moved = false;
+
+    // Dry logic state
+    let pendingDryConfirm = false;
+    let pendingDryType = null;
+
     /************ Helpers ************/
-    function openModal(id){ document.getElementById(id).classList.add('show'); }
-    function hideModal(id){ document.getElementById(id).classList.remove('show'); }
+    function openModal(id){
+      document.getElementById(id).classList.add('show');
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    }
+    function hideModal(id){
+      document.getElementById(id).classList.remove('show');
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }
 
     function pad2(n){ return String(n).padStart(2,'0'); }
     function todayStr(){
@@ -626,8 +651,7 @@
     }
 
     function setQRBoxHTML(html){
-      const qrDiv = document.getElementById('modalQR');
-      qrDiv.innerHTML = html;
+      document.getElementById('modalQR').innerHTML = html;
     }
 
     /************ JSONP ************/
@@ -670,40 +694,14 @@
     }
 
     function keyFor(typeId){
-      const date = todayStr();
-      return `${currentEmployee.id}_${date}_${typeId}`;
+      return `${currentEmployee.id}_${todayStr()}_${typeId}`;
     }
 
     function prewarmQRText(){
-      const date = todayStr();
       TICKET_TYPES.forEach(t=>{
-        const k = `${currentEmployee.id}_${date}_${t.id}`;
-        if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(t);
-      });
-    }
-
-    // SUPER FAST: generate QR images to dataURL offscreen right after entering the page
-    async function preRenderAllQRImages(){
-      if (!currentEmployee) return;
-      const pre = document.getElementById('qrPreRender');
-      pre.innerHTML = '';
-
-      const order = ['breakfast','lunch','dinner','dry']; // prioritize meals
-      for (const id of order){
-        const t = TICKET_TYPES.find(x=>x.id===id);
-        if (!t) continue;
-
         const k = keyFor(t.id);
         if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(t);
-        if (qrImageCache[k]) continue;
-
-        await renderQRToDataURL(qrTextCache[k]).then(url=>{
-          if (url) qrImageCache[k] = url;
-        });
-
-        // yield to UI so phone won't freeze
-        await new Promise(r=>setTimeout(r, 0));
-      }
+      });
     }
 
     function renderQRToDataURL(text){
@@ -712,7 +710,6 @@
         const holder = document.createElement('div');
         pre.appendChild(holder);
 
-        // Render
         new QRCode(holder, {
           text,
           width: 220,
@@ -720,7 +717,6 @@
           correctLevel: QRCode.CorrectLevel.L
         });
 
-        // Wait a tick then read canvas/img
         requestAnimationFrame(()=>{
           try{
             const canvas = holder.querySelector('canvas');
@@ -736,15 +732,8 @@
                 holder.remove();
                 return resolve(url);
               }
-              img.onload = () => {
-                const url = img.src;
-                holder.remove();
-                resolve(url);
-              };
-              img.onerror = () => {
-                holder.remove();
-                resolve(null);
-              };
+              img.onload = () => { const url = img.src; holder.remove(); resolve(url); };
+              img.onerror = () => { holder.remove(); resolve(null); };
               return;
             }
           }catch(e){}
@@ -754,16 +743,42 @@
       });
     }
 
-    /************ Quru talon click limiter ************/
+    async function preRenderPriorityQRImages(){
+      if (!currentEmployee) return;
+
+      const priority = ['breakfast','lunch','dinner','dry'];
+      for (const id of priority){
+        const t = TICKET_TYPES.find(x=>x.id===id);
+        if (!t) continue;
+
+        const k = keyFor(t.id);
+        if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(t);
+        if (qrImageCache[k]) continue;
+
+        const url = await renderQRToDataURL(qrTextCache[k]);
+        if (url) qrImageCache[k] = url;
+
+        await new Promise(r=>setTimeout(r, 0));
+      }
+    }
+
+    /************ DRY click policy ************
+      1-ci dəfə: QR
+      2-ci dəfə: təsdiq (OK -> QR)
+      3-cü+ : Xəta / Təkrar cəhd
+    ******************************************/
     function dryCountKey(){
       return `ghg_dry_count_${currentEmployee.id}_${todayStr()}`;
     }
     function getDryCount(){
       return Number(localStorage.getItem(dryCountKey()) || '0');
     }
+    function setDryCount(n){
+      localStorage.setItem(dryCountKey(), String(n));
+    }
     function incDryCount(){
       const n = getDryCount() + 1;
-      localStorage.setItem(dryCountKey(), String(n));
+      setDryCount(n);
       return n;
     }
 
@@ -792,6 +807,8 @@
           qrTextCache = {};
           qrImageCache = {};
           document.getElementById('qrPreRender').innerHTML = '';
+          pendingDryConfirm = false;
+          pendingDryType = null;
 
           showApp();
 
@@ -802,9 +819,8 @@
           await loadUsedStatuses();
           renderTickets();
 
-          // IMPORTANT: prewarm immediately and start pre-render right away
           prewarmQRText();
-          preRenderAllQRImages(); // async, fills cache fast
+          preRenderPriorityQRImages();
         } else if (data.status === 'invalid_pass') {
           showError('❌ Yanlış parol!');
         } else if (data.status === 'not_found') {
@@ -829,6 +845,8 @@
       qrTextCache = {};
       qrImageCache = {};
       document.getElementById('qrPreRender').innerHTML = '';
+      pendingDryConfirm = false;
+      pendingDryType = null;
 
       hideModal('qrModal');
       hideModal('ratingModal');
@@ -863,24 +881,30 @@
         const card = document.createElement('div');
         card.className = 'ticket';
 
-        const open = () => showTicket(type);
-        card.addEventListener('click', open, { passive: true });
-        card.addEventListener('touchstart', open, { passive: true });
+        // Pointer-based tap handling (scroll zamanı açılmasın)
+        card.addEventListener('pointerdown', (ev) => {
+          tapStartX = ev.clientX;
+          tapStartY = ev.clientY;
+          moved = false;
+        }, { passive:true });
 
-        // For quru talon, show extra info if already 2+ clicks today (optional)
-        let extraBadge = '';
-        if (type.id === 'dry' && currentEmployee){
-          const c = getDryCount();
-          if (c >= 2) extraBadge = ' dup';
-        }
+        card.addEventListener('pointermove', (ev) => {
+          if (moved) return;
+          const dx = Math.abs(ev.clientX - tapStartX);
+          const dy = Math.abs(ev.clientY - tapStartY);
+          if (dx > TAP_MOVE_THRESHOLD || dy > TAP_MOVE_THRESHOLD) moved = true;
+        }, { passive:true });
+
+        card.addEventListener('pointerup', () => {
+          if (moved) return; // bu swipe idi
+          showTicket(type);
+        }, { passive:true });
 
         card.innerHTML = `
           <div class="icon">${type.icon}</div>
           <div class="name">${type.name}</div>
           <div class="time">${type.time}</div>
-          <div class="badge ${used ? 'used' : 'ok'}${extraBadge}">
-            ${used ? 'İSTİFADƏ EDİLDİ' : (extraBadge ? 'TƏKRAR CƏHD' : 'AKTİV')}
-          </div>
+          <div class="badge ${used ? 'used' : 'ok'}">${used ? 'İSTİFADƏ EDİLDİ' : 'AKTİV'}</div>
         `;
         container.appendChild(card);
       });
@@ -889,27 +913,51 @@
     async function showTicket(type){
       if (!currentEmployee) return;
 
-      // QURU TALON: after 2 taps show "Təkrar cəhd"
+      // DRY logic
       if (type.id === 'dry') {
-        const next = incDryCount();
-        if (next > 2) {
+        const current = getDryCount();
+
+        // 3-cü və sonrası
+        if (current >= 2) {
+          document.getElementById('qrTicketInfo').textContent =
+            `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
+          openModal('qrModal');
+          setQRBoxHTML(`<div class="qrStatusText">Xəta<br/>Təkrar cəhd</div>`);
+          return;
+        }
+
+        // 2-ci dəfə -> təsdiq istə
+        if (current === 1) {
           document.getElementById('qrTicketInfo').textContent =
             `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
 
           openModal('qrModal');
-          setQRBoxHTML(`<div class="qrStatusText">Təkrar cəhd</div>`);
-          // refresh badge on cards
-          renderTickets();
+          setQRBoxHTML(`
+            <div class="qrStatusText">
+              Quru talon 2-ci dəfə istifadə olunur.<br/><br/>
+              Təsdiqləyirsiniz?
+              <div class="confirmRow">
+                <button class="btn btn-outline" onclick="dryCancel()">Ləğv et</button>
+                <button class="btn btn-primary" onclick="dryConfirm()">Təsdiqlə</button>
+              </div>
+            </div>
+          `);
+
+          pendingDryConfirm = true;
+          pendingDryType = type;
           return;
         }
+
+        // 1-ci dəfə: count artır və normal davam
+        incDryCount();
       }
 
+      // Normal ticket QR
       document.getElementById('qrTicketInfo').textContent =
         `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
 
       openModal('qrModal');
 
-      // instant: if image exists show immediately, else generate quickly then cache
       const k = keyFor(type.id);
       if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(type);
 
@@ -918,17 +966,54 @@
         return;
       }
 
-      // fallback (first time only): render -> cache -> show
       setQRBoxHTML(`<div class="qrStatusText">Yüklənir...</div>`);
       const url = await renderQRToDataURL(qrTextCache[k]);
       if (url) qrImageCache[k] = url;
       setQRBoxHTML(url ? `<img alt="QR" src="${url}">` : `<div class="qrStatusText">Xəta</div>`);
     }
 
+    // DRY confirm handlers
+    async function dryConfirm(){
+      if (!pendingDryConfirm || !pendingDryType) return;
+      pendingDryConfirm = false;
+
+      // 2-ci istifadəni təsdiqlədi -> count = 2 et
+      setDryCount(2);
+
+      // indi normal QR göstər
+      const type = pendingDryType;
+      pendingDryType = null;
+
+      document.getElementById('qrTicketInfo').textContent =
+        `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
+
+      const k = keyFor(type.id);
+      if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(type);
+
+      if (qrImageCache[k]) {
+        setQRBoxHTML(`<img alt="QR" src="${qrImageCache[k]}">`);
+        return;
+      }
+
+      setQRBoxHTML(`<div class="qrStatusText">Yüklənir...</div>`);
+      const url = await renderQRToDataURL(qrTextCache[k]);
+      if (url) qrImageCache[k] = url;
+      setQRBoxHTML(url ? `<img alt="QR" src="${url}">` : `<div class="qrStatusText">Xəta</div>`);
+    }
+
+    function dryCancel(){
+      pendingDryConfirm = false;
+      pendingDryType = null;
+      // count dəyişmir (hələ 1 qalır)
+      closeQRModal();
+    }
+
     function closeQRModal(e){
       if (!e || e.target.id === 'qrModal') {
         hideModal('qrModal');
         setQRBoxHTML('');
+        pendingDryConfirm = false;
+        pendingDryType = null;
       }
     }
 
@@ -1005,9 +1090,8 @@
         await loadUsedStatuses();
         renderTickets();
 
-        // Make QR instant right after page enters
         prewarmQRText();
-        preRenderAllQRImages();
+        preRenderPriorityQRImages();
       } else {
         showLogin();
       }
