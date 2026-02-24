@@ -212,24 +212,47 @@ function parseQR_(qrData) {
 }
 
 function getEmployeesSpreadsheet_() {
-  try {
-    return SpreadsheetApp.openById(EMPLOYEES_FILE_ID);
-  } catch (e) {
-    return SpreadsheetApp.getActiveSpreadsheet();
-  }
+  return openSpreadsheetById_(EMPLOYEES_FILE_ID, 'Employees');
 }
 
 function getScannerSpreadsheet_() {
+  return openSpreadsheetById_(SCANNER_FILE_ID, 'Scanner');
+}
+
+function openSpreadsheetById_(sheetId, label) {
+  var id = toText_(sheetId);
+  if (!id) {
+    throw new Error(label + ' fayl ID-si təyin edilməyib');
+  }
+
   try {
-    return SpreadsheetApp.openById(SCANNER_FILE_ID);
+    return SpreadsheetApp.openById(id);
   } catch (e) {
-    return SpreadsheetApp.getActiveSpreadsheet();
+    throw new Error(label + ' faylı tapılmadı və ya giriş icazəsi yoxdur (ID: ' + id + ')');
   }
 }
 
 function getEmployeesSheet_() {
-  var ss = getEmployeesSpreadsheet_();
-  return ss.getSheetByName('Cadvel1') || ss.getSheetByName('Cədvəl1') || ss.getSheets()[0];
+  var preferredSheets = ['Cadvel1', 'Cədvəl1', 'Employees', 'Employee'];
+  var candidates = [getEmployeesSpreadsheet_()];
+
+  // Bəzi quraşdırmalarda employee cədvəli scanner faylında saxlanılır.
+  if (toText_(SCANNER_FILE_ID) && SCANNER_FILE_ID !== EMPLOYEES_FILE_ID) {
+    try {
+      candidates.push(getScannerSpreadsheet_());
+    } catch (e) {
+      // scanner faylı açılmasa belə əsas employee faylı ilə davam et.
+    }
+  }
+
+  for (var i = 0; i < candidates.length; i++) {
+    var sheet = findSheetByNames_(candidates[i], preferredSheets);
+    if (sheet) {
+      return sheet;
+    }
+  }
+
+  throw new Error('Employees cədvəli tapılmadı (Cadvel1/Cədvəl1)');
 }
 
 function getOrCreateRatingSheet_(ss) {
@@ -248,6 +271,19 @@ function getScannerSheet_() {
     sheet.appendRow(['Tarix', 'Saat', 'DateKey', 'Əməkdaş ID', 'Ad Soyad Ata adı', 'Talon Növü', 'TicketTypeId', 'Talon ID', 'Status']);
   }
   return sheet;
+}
+
+function findSheetByNames_(ss, names) {
+  if (!ss) return null;
+
+  for (var i = 0; i < names.length; i++) {
+    var byName = ss.getSheetByName(names[i]);
+    if (byName) {
+      return byName;
+    }
+  }
+
+  return null;
 }
 
 function ensureRatingHeaders_(sheet) {
