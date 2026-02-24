@@ -166,6 +166,7 @@
     // QR cache
     let qrTextCache = {};
     let qrImageCache = {};
+    let qrImagePromises = {};
 
     function pad2(n){ return String(n).padStart(2,'0'); }
     function todayStr(){
@@ -304,10 +305,33 @@
         return;
       }
 
+      if (!qrImagePromises[k]) {
+        qrImagePromises[k] = renderQRToDataURL(qrTextCache[k]).then((url) => {
+          if (url) qrImageCache[k] = url;
+          delete qrImagePromises[k];
+          return url;
+        });
+      }
+
       setQRBoxHTML(`<div class="qrStatusText">Yüklənir...</div>`);
-      const url = await renderQRToDataURL(qrTextCache[k]);
-      if (url) qrImageCache[k] = url;
+      const url = await qrImagePromises[k];
       setQRBoxHTML(url ? `<img alt="QR" src="${url}">` : `<div class="qrStatusText">Xəta</div>`);
+    }
+
+    function preRenderAllQRCodes(){
+      if (!currentEmployee) return;
+
+      TICKET_TYPES.forEach((type) => {
+        const k = keyFor(type.id);
+        if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(type);
+        if (qrImageCache[k] || qrImagePromises[k]) return;
+
+        qrImagePromises[k] = renderQRToDataURL(qrTextCache[k]).then((url) => {
+          if (url) qrImageCache[k] = url;
+          delete qrImagePromises[k];
+          return url;
+        });
+      });
     }
 
     function closeQRModal(e){
@@ -398,9 +422,11 @@
 
           qrTextCache = {};
           qrImageCache = {};
+          qrImagePromises = {};
           document.getElementById('qrPreRender').innerHTML = '';
 
           renderTickets();
+          preRenderAllQRCodes();
         } else if (data.status === 'invalid_pass'){
           showError('❌ Yanlış parol!');
         } else if (data.status === 'not_found'){
@@ -422,6 +448,7 @@
       selectedRating = 0;
       qrTextCache = {};
       qrImageCache = {};
+      qrImagePromises = {};
       document.getElementById('qrPreRender').innerHTML = '';
       hideModal('qrModal'); hideModal('ratingModal');
       document.getElementById('mainApp').style.display = 'none';
@@ -442,6 +469,7 @@
         document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
 
         renderTickets();
+        preRenderAllQRCodes();
       }
     };
   </script>
