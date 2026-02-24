@@ -4,541 +4,129 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
   <title>GHG Yemək Talonu</title>
-
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-
   <style>
-    :root{
-      --navy-950:#050b16;
-      --navy-900:#070f1f;
-      --navy-850:#09142a;
-      --navy-800:#0b1732;
-
-      --blue-500:#2b6cff;
-      --text:#eaf1ff;
-      --muted:rgba(234,241,255,.72);
-
-      --stroke:rgba(255,255,255,.10);
-      --shadow: 0 22px 70px rgba(0,0,0,.62);
-      --shadow2: 0 14px 46px rgba(0,0,0,.55);
-
-      --radius: 22px;
-      --speed: 240ms;
-
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-left: env(safe-area-inset-left, 0px);
-      --safe-right: env(safe-area-inset-right, 0px);
-    }
-
+    /* (Sənin dizaynını saxladım – qısaltmıram) */
+    :root{--navy-950:#050b16;--navy-900:#070f1f;--navy-850:#09142a;--navy-800:#0b1732;--blue-500:#2b6cff;--text:#eaf1ff;--muted:rgba(234,241,255,.72);--stroke:rgba(255,255,255,.10);--shadow:0 22px 70px rgba(0,0,0,.62);--shadow2:0 14px 46px rgba(0,0,0,.55);--radius:22px;--speed:240ms;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);}
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     html,body{height:100%}
     body{
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      min-height:100dvh;
-      color:var(--text);
-
-      background:
-        radial-gradient(1200px 900px at 18% 12%, #061634 0%, transparent 55%),
-        radial-gradient(900px 700px at 88% 22%, #07122a 0%, transparent 52%),
-        radial-gradient(800px 650px at 55% 85%, #040a18 0%, transparent 60%),
-        linear-gradient(140deg, var(--navy-950) 0%, var(--navy-900) 40%, var(--navy-850) 100%);
-
-      padding: calc(14px + var(--safe-top)) calc(14px + var(--safe-right)) calc(14px + var(--safe-bottom)) calc(14px + var(--safe-left));
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;min-height:100dvh;color:var(--text);
+      background:radial-gradient(1200px 900px at 18% 12%, #061634 0%, transparent 55%),
+               radial-gradient(900px 700px at 88% 22%, #07122a 0%, transparent 52%),
+               radial-gradient(800px 650px at 55% 85%, #040a18 0%, transparent 60%),
+               linear-gradient(140deg, var(--navy-950) 0%, var(--navy-900) 40%, var(--navy-850) 100%);
+      padding:calc(14px + var(--safe-top)) calc(14px + var(--safe-right)) calc(14px + var(--safe-bottom)) calc(14px + var(--safe-left));
       overflow-x:hidden;
     }
-
-    body::before{
-      content:"";
-      position:fixed; inset:0;
-      pointer-events:none;
-      opacity:.06;
-      background-image: var(--logo);
-      background-repeat:no-repeat;
-      background-position: center 18%;
-      background-size: 520px auto;
-      filter: drop-shadow(0 18px 70px rgba(0,0,0,.9));
-      transform: translateY(-12px);
-    }
-
     .wrap{max-width:1060px;margin:0 auto;position:relative}
-
-    .glass{
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border:1px solid var(--stroke);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(12px);
-    }
-
-    .page{ transition: opacity var(--speed) ease, transform var(--speed) ease; }
-    .pageHide{ opacity:0; transform: translateY(12px); pointer-events:none; }
-    .pageShow{ opacity:1; transform: translateY(0); pointer-events:auto; }
-
-    @keyframes slideUp {
-      from { transform: translateY(28px); opacity: 0; }
-      to   { transform: translateY(0); opacity: 1; }
-    }
-    .slideUp{ animation: slideUp 520ms cubic-bezier(.2,.9,.2,1) both; }
-
-    .btn{
-      width:100%;
-      border:none;
-      color:white;
-      cursor:pointer;
-      padding:14px 16px;
-      border-radius: 16px;
-      font-weight:800;
-      letter-spacing:.2px;
-
-      background: linear-gradient(135deg, #0f2a55 0%, #1f55d9 52%, #103a9d 100%);
-      box-shadow: 0 14px 34px rgba(31,85,217,.20);
-
-      transition: transform var(--speed) ease, box-shadow var(--speed) ease, filter var(--speed) ease;
-      position:relative;
-      overflow:hidden;
-      touch-action: manipulation;
-    }
-    .btn::after{
-      content:"";
-      position:absolute; inset:-40% -60%;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), transparent 45%);
-      transform: translateX(-35%) rotate(12deg);
-      transition: transform 520ms ease;
-      opacity:.45;
-    }
-    .btn:hover{ transform: translateY(-2px); box-shadow: 0 18px 52px rgba(31,85,217,.24); }
-    .btn:hover::after{ transform: translateX(0) rotate(12deg); }
-    .btn:active{ transform: translateY(0); filter:saturate(1.1); }
-    .btn:disabled{opacity:.65; cursor:not-allowed; transform:none; box-shadow:none;}
-
-    .btn-outline{
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border:1px solid rgba(255,255,255,.14);
-      box-shadow: 0 12px 40px rgba(0,0,0,.35);
-    }
-
-    .btn-danger{
-      background: linear-gradient(135deg, #5a1515 0%, #ef4444 60%, #951010 100%);
-      box-shadow: 0 16px 44px rgba(239,68,68,.16);
-      width:auto;
-      padding:10px 14px;
-      border-radius: 999px;
-      font-weight:800;
-      cursor:pointer;
-      border:none;
-      color:#fff;
-      transition: transform var(--speed) ease;
-      touch-action: manipulation;
-    }
-    .btn-danger:active{ transform: translateY(1px); }
-
-    .login{
-      min-height: calc(100dvh - 28px);
-      display:flex;
-      align-items:flex-start;
-      justify-content:center;
-      padding-top: clamp(24px, 7vh, 72px);
-    }
-
-    .loginFrame{
-      width:100%;
-      max-width: 440px;
-      border-radius: 26px;
-      position: relative;
-      padding: 2px;
-      overflow: hidden;
-      box-shadow: var(--shadow);
-      transform: translateZ(0);
-      background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.018));
-      border: 1px solid rgba(255,255,255,.09);
-    }
-
-    .loginFrame .waterLine{
-      position:absolute;
-      inset:0;
-      border-radius: 26px;
-      pointer-events:none;
-      z-index: 2;
-
-      background:
-        linear-gradient(90deg,
-          rgba(255,255,255,0) 0%,
-          rgba(255,255,255,.18) 18%,
-          rgba(255,255,255,.75) 35%,
-          rgba(255,255,255,.18) 55%,
-          rgba(255,255,255,0) 70%) 0 0 / 180% 100%;
-
-      mask:
-        linear-gradient(#000,#000) content-box,
-        linear-gradient(#000,#000);
-      -webkit-mask:
-        linear-gradient(#000,#000) content-box,
-        linear-gradient(#000,#000);
-      padding: 2px;
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-
-      opacity: .80;
-      filter: blur(.25px) drop-shadow(0 0 18px rgba(255,255,255,.35));
-      animation: waterFlow 1.85s linear infinite;
-    }
-
-    .loginFrame::after{
-      content:"";
-      position:absolute;
-      inset:-18px;
-      border-radius: 40px;
-      pointer-events:none;
-      background:
-        radial-gradient(closest-side,
-          rgba(255,255,255,.18),
-          rgba(255,255,255,0) 62%);
-      filter: blur(14px);
-      opacity:.55;
-      z-index:1;
-    }
-
-    @keyframes waterFlow {
-      0%   { background-position: 0% 0; }
-      100% { background-position: 180% 0; }
-    }
-
-    .loginCard{
-      position: relative;
-      z-index: 3;
-      width:100%;
-      padding: 26px;
-      border-radius: 24px;
-
-      background:
-        radial-gradient(120% 140% at 15% 10%, rgba(255,255,255,.05), rgba(255,255,255,0) 58%),
-        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border: 1px solid rgba(255,255,255,.09);
-      backdrop-filter: blur(12px);
-
-      box-shadow:
-        0 24px 80px rgba(0,0,0,.55),
-        inset 0 1px 0 rgba(255,255,255,.05);
-    }
-
-    .brand{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom: 14px; }
-    .brandBadge{
-      width:44px;height:44px;border-radius:14px;
-      background: linear-gradient(135deg, rgba(31,85,217,.22), rgba(255,255,255,.05));
-      border:1px solid rgba(255,255,255,.12);
-      display:grid;place-items:center;
-      box-shadow: var(--shadow2);
-      font-weight: 950;
-      letter-spacing: .6px;
-    }
-    .brandTitle{font-size: 22px;font-weight: 900;}
-    .brandSub{color:var(--muted); font-weight:700; font-size: 13px; text-align:center; margin-bottom: 18px;}
-
-    label{display:block; color:rgba(234,241,255,.92); font-weight:800; margin: 10px 0 6px;}
-    input{
-      width:100%;
-      padding: 14px 14px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.045);
-      color: var(--text);
-      outline:none;
-      font-size: 16px;
-    }
-    input:focus{
-      border-color: rgba(31,85,217,.55);
-      background: rgba(255,255,255,.06);
-      box-shadow: 0 0 0 6px rgba(31,85,217,.12);
-    }
-
-    .error{
-      margin-top: 12px;
-      padding: 12px 12px;
-      border-radius: 14px;
-      border:1px solid rgba(239,68,68,.35);
-      background: rgba(239,68,68,.12);
-      color: #ffd7d7;
-      display:none;
-      font-weight:700;
-    }
-
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:12px;
-      padding: 14px 16px;
-      margin-top: 10px;
-    }
-    .who{
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-      color:rgba(234,241,255,.95);
-      font-weight:800;
-    }
-    .chip{
-      display:inline-flex; align-items:center; gap:8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border:1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.055);
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-      margin-top: 12px;
-    }
-    @media(min-width:900px){
-      .grid{ grid-template-columns: 1.55fr .95fr; align-items:start; }
-    }
-    .section{ padding: 18px; }
-    .sectionTitle{
-      font-size: 16px;
-      font-weight: 900;
-      margin-bottom: 10px;
-      letter-spacing:.2px;
-    }
-    .infoBox{
-      padding: 12px 14px;
-      border-radius: 16px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.05);
-      color: rgba(234,241,255,.92);
-      margin-bottom: 14px;
-      line-height:1.35;
-    }
-
-    .ticketGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    @media(min-width:700px){
-      .ticketGrid{ grid-template-columns: repeat(4, 1fr); }
-    }
-    .ticket{
-      border-radius: 18px;
-      padding: 16px 14px;
-      border:1px solid rgba(255,255,255,.14);
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      box-shadow: 0 12px 35px rgba(0,0,0,.34);
-      cursor:pointer;
-      position:relative;
-      overflow:hidden;
-      user-select:none;
-      /* SCROLL üçün: klik var, amma swipe zamanı açılmasın */
-      touch-action: pan-y;
-      transition: transform var(--speed) ease, box-shadow var(--speed) ease, border var(--speed) ease;
-    }
-    .ticket::before{
-      content:"";
-      position:absolute; inset:-60% -60%;
-      background: radial-gradient(circle at 30% 35%, rgba(31,85,217,.18), transparent 45%);
-      transform: rotate(10deg);
-      opacity:.9;
-    }
-    .ticket:hover{
-      transform: translateY(-4px);
-      border-color: rgba(31,85,217,.32);
-      box-shadow: 0 16px 48px rgba(0,0,0,.44);
-    }
-    .ticket:active{ transform: translateY(-1px) scale(.985); }
-    .ticket .icon{ font-size: 36px; position:relative; }
-    .ticket .name{ font-weight: 950; margin-top: 8px; position:relative; }
-    .ticket .time{ color: var(--muted); font-weight:700; font-size: 12px; margin-top: 4px; position:relative; }
-    .badge{
-      margin-top: 10px;
-      display:inline-flex;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing:.3px;
-      border:1px solid rgba(255,255,255,.18);
-      position:relative;
-      background: rgba(255,255,255,.06);
-    }
-    .badge.ok{ border-color: rgba(34,197,94,.25); background: rgba(34,197,94,.10); }
-    .badge.used{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.10); }
-    .badge.dup{ border-color: rgba(250,204,21,.28); background: rgba(250,204,21,.10); }
-
-    .modal{
-      position:fixed; inset:0;
-      background: rgba(0,0,0,.78);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding: 16px;
-      z-index: 1000;
-      /* modal açıq olanda body scroll olmasın */
-      overscroll-behavior: contain;
-      touch-action: none;
-    }
-    .modal.show{ display:flex !important; }
-    .modalCard{
-      width:100%;
-      max-width: 430px;
-      padding: 18px;
-      border-radius: 22px;
-      border:1px solid rgba(255,255,255,.14);
-      background: linear-gradient(180deg, rgba(6,12,22,.92), rgba(4,8,16,.92));
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-      text-align:center;
-      animation: slideUp 320ms cubic-bezier(.2,.9,.2,1) both;
-    }
-    .modalTitle{ font-size: 18px; font-weight: 950; }
-    .modalSub{ margin-top: 8px; color: var(--muted); font-weight:700; }
-
-    .qrBox{
-      width: 250px; height: 250px;
-      margin: 16px auto 10px;
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.97);
-      display:grid; place-items:center;
-      box-shadow: 0 16px 44px rgba(0,0,0,.50);
-      overflow:hidden;
-    }
-    .qrBox img{
-      width:220px; height:220px;
-      image-rendering: pixelated;
-    }
-    .qrStatusText{
-      width:100%;
-      height:100%;
-      display:grid;
-      place-items:center;
-      color:#0b1732;
-      font-weight: 950;
-      letter-spacing:.3px;
-      font-size: 18px;
-      background: radial-gradient(circle at 30% 25%, rgba(0,0,0,.10), transparent 55%);
-      border-radius: 14px;
-    }
-
+    .glass{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow);backdrop-filter:blur(12px);}
+    .page{transition:opacity var(--speed) ease, transform var(--speed) ease;}
+    .pageHide{opacity:0;transform:translateY(12px);pointer-events:none;}
+    .pageShow{opacity:1;transform:translateY(0);pointer-events:auto;}
+    .btn{width:100%;border:none;color:white;cursor:pointer;padding:14px 16px;border-radius:16px;font-weight:800;letter-spacing:.2px;
+      background:linear-gradient(135deg,#0f2a55 0%,#1f55d9 52%,#103a9d 100%);box-shadow:0 14px 34px rgba(31,85,217,.20);
+      transition:transform var(--speed) ease, box-shadow var(--speed) ease, filter var(--speed) ease;position:relative;overflow:hidden;touch-action:manipulation;}
+    .btn:disabled{opacity:.65;cursor:not-allowed}
+    .btn-outline{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 40px rgba(0,0,0,.35);}
+    .btn-danger{background:linear-gradient(135deg,#5a1515 0%,#ef4444 60%,#951010 100%);box-shadow:0 16px 44px rgba(239,68,68,.16);width:auto;padding:10px 14px;border-radius:999px;font-weight:800;cursor:pointer;border:none;color:#fff;}
+    .login{min-height:calc(100dvh - 28px);display:flex;align-items:flex-start;justify-content:center;padding-top:clamp(24px,7vh,72px);}
+    .loginCard{padding:26px;border-radius:24px;border:1px solid rgba(255,255,255,.09);background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));backdrop-filter:blur(12px);max-width:440px;width:100%;}
+    label{display:block;color:rgba(234,241,255,.92);font-weight:800;margin:10px 0 6px;}
+    input{width:100%;padding:14px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.045);color:var(--text);outline:none;font-size:16px;}
+    .error{margin-top:12px;padding:12px;border-radius:14px;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.12);color:#ffd7d7;display:none;font-weight:700;}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-top:10px;}
+    .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.055);font-weight:800;}
+    .grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:12px;}
+    @media(min-width:900px){.grid{grid-template-columns:1.55fr .95fr;align-items:start;}}
+    .section{padding:18px;}
+    .ticketGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    @media(min-width:700px){.ticketGrid{grid-template-columns:repeat(4,1fr);}}
+    .ticket{border-radius:18px;padding:16px 14px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow:0 12px 35px rgba(0,0,0,.34);cursor:pointer;position:relative;overflow:hidden;user-select:none;touch-action:pan-y;}
+    .ticket .icon{font-size:36px}
+    .ticket .name{font-weight:950;margin-top:8px}
+    .ticket .time{color:var(--muted);font-weight:700;font-size:12px;margin-top:4px}
+    .badge{margin-top:10px;display:inline-flex;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.3px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000;touch-action:none;}
+    .modal.show{display:flex!important;}
+    .modalCard{width:100%;max-width:430px;padding:18px;border-radius:22px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg, rgba(6,12,22,.92), rgba(4,8,16,.92));box-shadow:var(--shadow);backdrop-filter:blur(10px);text-align:center;}
+    .qrBox{width:250px;height:250px;margin:16px auto 10px;padding:14px;border-radius:18px;background:rgba(255,255,255,.97);display:grid;place-items:center;box-shadow:0 16px 44px rgba(0,0,0,.50);overflow:hidden;}
+    .qrBox img{width:220px;height:220px;image-rendering:pixelated;}
+    .qrStatusText{width:100%;height:100%;display:grid;place-items:center;color:#0b1732;font-weight:950;font-size:18px;background:rgba(0,0,0,.06);border-radius:14px;}
     .stars{display:flex;justify-content:center;gap:10px;margin:12px 0 10px;}
-    .starBtn{
-      font-size: 32px;
-      background:none;
-      border:none;
-      cursor:pointer;
-      color: rgba(255,255,255,.28);
-      transition: transform var(--speed) ease, color var(--speed) ease;
-      touch-action: manipulation;
-    }
-    .starBtn:active{ transform: translateY(1px) scale(.98); }
-    .starBtn.active{ color: #ffbf2f; text-shadow: 0 10px 26px rgba(255,191,47,.25); }
-
-    textarea{
-      width:100%;
-      min-height: 120px;
-      padding: 12px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.07);
-      color: var(--text);
-      outline:none;
-      resize: vertical;
-      font-size: 15px;
-    }
-
-    .footer{
-      text-align:center;
-      margin: 16px 0 6px;
-      color: rgba(234,241,255,.78);
-      font-weight: 900;
-      letter-spacing:.5px;
-    }
-
-    #qrPreRender{
-      position: fixed;
-      left: -99999px;
-      top: -99999px;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      opacity: 0;
-      pointer-events: none;
-    }
+    .starBtn{font-size:32px;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.28);touch-action:manipulation;}
+    .starBtn.active{color:#ffbf2f;}
+    textarea{width:100%;min-height:120px;padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:var(--text);outline:none;resize:vertical;font-size:15px;}
+    #qrPreRender{position:fixed;left:-99999px;top:-99999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;}
   </style>
 </head>
 
-<body style="--logo: url('');">
+<body>
   <div class="wrap">
 
     <!-- LOGIN -->
-    <div class="login page pageShow slideUp" id="loginPage">
-      <div class="loginFrame">
-        <div class="waterLine"></div>
-        <div class="loginCard">
-          <div class="brand">
-            <div class="brandBadge">GHG</div>
-            <div>
-              <div class="brandTitle">GHG Yemək</div>
-              <div class="brandSub">Elektron talon sistemi</div>
-            </div>
-          </div>
+    <div class="login page pageShow" id="loginPage">
+      <div class="loginCard">
+        <div style="text-align:center;font-weight:900;font-size:20px;margin-bottom:6px;">GHG Yemək</div>
+        <div style="text-align:center;color:rgba(234,241,255,.72);font-weight:800;margin-bottom:18px;">Elektron talon sistemi</div>
 
-          <div class="brandSub" style="margin-top:-6px;">İşçi ID və 4 rəqəmli parol ilə daxil olun</div>
-
-          <form onsubmit="handleLogin(event)">
-            <label>İşçi ID</label>
-            <input id="employeeId" type="text" inputmode="numeric" autocomplete="username" required />
-
-            <label>Parol (4 rəqəm)</label>
-            <input id="employeePass" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" required />
-
-            <div style="height:12px"></div>
-            <button class="btn" id="loginBtn" type="submit">Daxil ol</button>
-
-            <div class="error" id="errorMsg"></div>
-          </form>
+        <div style="text-align:center;color:rgba(234,241,255,.72);font-weight:800;margin-bottom:8px;">
+          İşçi ID və 4 rəqəmli parol ilə daxil olun
         </div>
+
+        <form onsubmit="handleLogin(event)">
+          <label>İşçi ID</label>
+          <input id="employeeId" type="text" inputmode="numeric" autocomplete="username" required />
+
+          <label>Parol (4 rəqəm)</label>
+          <input id="employeePass" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" required />
+
+          <div style="height:12px"></div>
+          <button class="btn" id="loginBtn" type="submit">Daxil ol</button>
+          <div class="error" id="errorMsg"></div>
+        </form>
       </div>
     </div>
 
     <!-- APP -->
     <div id="mainApp" class="page pageHide" style="display:none;">
       <div class="glass topbar">
-        <div class="who">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <span class="chip">👤 <span id="displayName"></span></span>
           <span class="chip">🆔 <span id="displayId"></span></span>
-          <span class="chip" style="color:var(--muted);" id="dateInfo"></span>
+          <span class="chip" style="color:rgba(234,241,255,.72);" id="dateInfo"></span>
         </div>
         <button class="btn-danger" onclick="logout()">Çıxış</button>
       </div>
 
       <div class="grid">
         <div class="glass section">
-          <div class="sectionTitle">🎫 Talonlarım</div>
-          <div class="infoBox">
-            <b>Qaydalar:</b> Hər talon üçün hər gün yeni QR yaranır. Talonlar bir-birini deaktiv etmir — hamısı aktiv qalır.
+          <div style="font-weight:900;margin-bottom:10px;">🎫 Talonlarım</div>
+          <div style="padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:rgba(234,241,255,.92);margin-bottom:14px;line-height:1.35;">
+            <b>Qaydalar:</b> Hər talon üçün hər gün yeni QR yaranır. (Köhnə gün QR-i işləməyəcək)
           </div>
           <div class="ticketGrid" id="ticketContainer"></div>
         </div>
 
         <div class="glass section">
-          <div class="sectionTitle">⭐ Yemək qiymətləndirməsi</div>
-          <div class="infoBox" style="margin-bottom:12px;">
+          <div style="font-weight:900;margin-bottom:10px;">⭐ Yemək qiymətləndirməsi</div>
+          <div style="padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:rgba(234,241,255,.92);margin-bottom:12px;line-height:1.35;">
             1–5 ulduz seçin və qısa səbəb yazın. Məlumatlar “Yemək qiymətləndirməsi” sheetinə yazılacaq.
           </div>
           <button class="btn btn-outline" onclick="openRatingModal()">🍽️ Yeməyi qiymətləndir</button>
         </div>
       </div>
-
-      <div class="footer">By CED</div>
     </div>
-
   </div>
 
   <!-- QR MODAL -->
   <div class="modal" id="qrModal" onclick="closeQRModal(event)">
     <div class="modalCard" onclick="event.stopPropagation()">
-      <div class="modalTitle">🎫 Talonunuz hazırdır</div>
-      <div class="modalSub" id="qrTicketInfo"></div>
+      <div style="font-size:18px;font-weight:950;">🎫 Talonunuz hazırdır</div>
+      <div style="margin-top:8px;color:rgba(234,241,255,.72);font-weight:800;" id="qrTicketInfo"></div>
       <div class="qrBox"><div id="modalQR"></div></div>
-      <div class="modalSub" style="margin-bottom:12px;">Kafeteryada skanerə göstərin</div>
+      <div style="color:rgba(234,241,255,.72);font-weight:800;margin-bottom:12px;">Kafeteryada skanerə göstərin</div>
       <button class="btn btn-outline" onclick="closeQRModal()">Bağla</button>
     </div>
   </div>
@@ -546,8 +134,8 @@
   <!-- RATING MODAL -->
   <div class="modal" id="ratingModal" onclick="closeRatingModal(event)">
     <div class="modalCard" onclick="event.stopPropagation()">
-      <div class="modalTitle">⭐ Yemək qiymətləndirmə</div>
-      <div class="modalSub">1–5 ulduz seçin və səbəb yazın</div>
+      <div style="font-size:18px;font-weight:950;">⭐ Yemək qiymətləndirmə</div>
+      <div style="margin-top:8px;color:rgba(234,241,255,.72);font-weight:800;">1–5 ulduz seçin və səbəb yazın</div>
 
       <div class="stars" id="ratingStars"></div>
       <textarea id="ratingReason" placeholder="Məsələn: Yeməklər əladır."></textarea>
@@ -559,14 +147,11 @@
     </div>
   </div>
 
-  <!-- OFFSCREEN QR RENDER -->
   <div id="qrPreRender"></div>
 
   <script>
     /************ CONFIG ************/
-    const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzs4AoizNaZPPLJ4Leifa3H74ciR_sntFzqPx9HE5cL4tkziK-rI9tb2qgtOX-LZhyl/exec';
-    const LOGO_URL = ''; // <- logo linki
-    if (LOGO_URL) document.body.style.setProperty('--logo', `url('${LOGO_URL}')`);
+    const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzMzI7Hp_SJJQo5i0BztWQuZuMhy-cUYE9zyNaVXDIY9Jm_r_HnHoPYfkr9G37oLB1W/exec'; // <-- /exec linkini yaz
 
     const TICKET_TYPES = [
       { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00–10:00', code: 'S' },
@@ -577,27 +162,10 @@
 
     let currentEmployee = null;
     let selectedRating = 0;
-    let usedMap = {};
 
-    // QR caches
-    let qrTextCache = {};   // key -> qrText
-    let qrImageCache = {};  // key -> dataURL
-
-    // Swipe/scroll guard
-    let isTouchScrolling = false;
-    let touchStartY = 0;
-
-    /************ Helpers ************/
-    function openModal(id){
-      document.getElementById(id).classList.add('show');
-      document.documentElement.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
-    }
-    function hideModal(id){
-      document.getElementById(id).classList.remove('show');
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-    }
+    // QR cache
+    let qrTextCache = {};
+    let qrImageCache = {};
 
     function pad2(n){ return String(n).padStart(2,'0'); }
     function todayStr(){
@@ -611,37 +179,15 @@
       el.style.display = 'block';
     }
 
-    function showLogin(){
-      const login = document.getElementById('loginPage');
-      const app = document.getElementById('mainApp');
-
-      app.classList.remove('pageShow');
-      app.classList.add('pageHide');
-      setTimeout(()=>{ app.style.display = 'none'; }, 220);
-
-      login.style.display = 'flex';
-      login.classList.remove('pageHide');
-      login.classList.add('pageShow','slideUp');
-
-      document.getElementById('employeeId').value = localStorage.getItem('ghg_login_id') || '';
-      document.getElementById('employeePass').value = localStorage.getItem('ghg_login_pass') || '';
+    function openModal(id){
+      document.getElementById(id).classList.add('show');
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
     }
-
-    function showApp(){
-      const login = document.getElementById('loginPage');
-      const app = document.getElementById('mainApp');
-
-      login.classList.remove('pageShow');
-      login.classList.add('pageHide');
-      setTimeout(()=>{ login.style.display = 'none'; }, 220);
-
-      app.style.display = 'block';
-      app.classList.remove('pageHide');
-      app.classList.add('pageShow');
-    }
-
-    function setQRBoxHTML(html){
-      document.getElementById('modalQR').innerHTML = html;
+    function hideModal(id){
+      document.getElementById(id).classList.remove('show');
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
     }
 
     /************ JSONP ************/
@@ -662,7 +208,6 @@
           reject(new Error('Timeout'));
         }, 12000);
 
-        script.onload = () => clearTimeout(t);
         script.onerror = () => { clearTimeout(t); reject(new Error('Load error')); };
 
         script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
@@ -670,13 +215,13 @@
       });
     }
 
-    /************ QR Generator ************/
+    /************ QR ************/
     function generateDailyQR(type) {
       const date = todayStr();
       const base = `${currentEmployee.id}_${date}_${type.code}_${type.id}`;
       let hash = 0;
-      for (let i = 0; i < base.length; i++) {
-        hash = ((hash << 5) - hash) + base.charCodeAt(i);
+      for (let i=0;i<base.length;i++){
+        hash = ((hash<<5)-hash)+base.charCodeAt(i);
         hash |= 0;
       }
       const hashCode = Math.abs(hash % 9000 + 1000);
@@ -687,201 +232,57 @@
       return `${currentEmployee.id}_${todayStr()}_${typeId}`;
     }
 
-    function prewarmQRText(){
-      TICKET_TYPES.forEach(t=>{
-        const k = keyFor(t.id);
-        if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(t);
-      });
-    }
-
     function renderQRToDataURL(text){
       return new Promise((resolve)=>{
         const pre = document.getElementById('qrPreRender');
         const holder = document.createElement('div');
         pre.appendChild(holder);
 
-        new QRCode(holder, {
-          text,
-          width: 220,
-          height: 220,
-          correctLevel: QRCode.CorrectLevel.L
-        });
+        new QRCode(holder, { text, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.L });
 
         requestAnimationFrame(()=>{
-          try{
-            const canvas = holder.querySelector('canvas');
-            if (canvas) {
-              const url = canvas.toDataURL('image/png');
+          const canvas = holder.querySelector('canvas');
+          if (canvas){
+            const url = canvas.toDataURL('image/png');
+            holder.remove();
+            return resolve(url);
+          }
+          const img = holder.querySelector('img');
+          if (img){
+            if (img.complete && img.naturalWidth){
+              const url = img.src;
               holder.remove();
               return resolve(url);
             }
-            const img = holder.querySelector('img');
-            if (img) {
-              if (img.complete && img.naturalWidth) {
-                const url = img.src;
-                holder.remove();
-                return resolve(url);
-              }
-              img.onload = () => { const url = img.src; holder.remove(); resolve(url); };
-              img.onerror = () => { holder.remove(); resolve(null); };
-              return;
-            }
-          }catch(e){}
+            img.onload = ()=>{ const url = img.src; holder.remove(); resolve(url); };
+            img.onerror = ()=>{ holder.remove(); resolve(null); };
+            return;
+          }
           holder.remove();
           resolve(null);
         });
       });
     }
 
-    // PRIORITY pre-render: meals first so they are instant
-    async function preRenderPriorityQRImages(){
-      if (!currentEmployee) return;
-
-      const priority = ['breakfast','lunch','dinner','dry'];
-      for (const id of priority){
-        const t = TICKET_TYPES.find(x=>x.id===id);
-        if (!t) continue;
-
-        const k = keyFor(t.id);
-        if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(t);
-        if (qrImageCache[k]) continue;
-
-        const url = await renderQRToDataURL(qrTextCache[k]);
-        if (url) qrImageCache[k] = url;
-
-        // UI freeze olmasın
-        await new Promise(r=>setTimeout(r, 0));
-      }
+    function setQRBoxHTML(html){
+      document.getElementById('modalQR').innerHTML = html;
     }
 
-    /************ Quru talon click limiter ************/
-    function dryCountKey(){
-      return `ghg_dry_count_${currentEmployee.id}_${todayStr()}`;
-    }
-    function getDryCount(){
-      return Number(localStorage.getItem(dryCountKey()) || '0');
-    }
-    function incDryCount(){
-      const n = getDryCount() + 1;
-      localStorage.setItem(dryCountKey(), String(n));
-      return n;
-    }
-
-    /************ Login ************/
-    async function handleLogin(e){
-      e.preventDefault();
-      const id = document.getElementById('employeeId').value.trim();
-      const pass = document.getElementById('employeePass').value.trim();
-
-      const btn = document.getElementById('loginBtn');
-      btn.disabled = true;
-      btn.textContent = 'Yoxlanılır...';
-
-      try{
-        const url = `${SHEET_API_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}`;
-        const data = await fetchJSONP(url);
-
-        if (data.status === 'success') {
-          currentEmployee = { id, fullName: data.employee.fullName || '' };
-
-          localStorage.setItem('ghg_login_id', id);
-          localStorage.setItem('ghg_login_pass', pass);
-          localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
-
-          usedMap = {};
-          qrTextCache = {};
-          qrImageCache = {};
-          document.getElementById('qrPreRender').innerHTML = '';
-
-          showApp();
-
-          document.getElementById('displayName').textContent = currentEmployee.fullName;
-          document.getElementById('displayId').textContent = currentEmployee.id;
-          document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
-
-          await loadUsedStatuses();
-          renderTickets();
-
-          // FAST: pre-render immediately (meals first)
-          prewarmQRText();
-          preRenderPriorityQRImages();
-        } else if (data.status === 'invalid_pass') {
-          showError('❌ Yanlış parol!');
-        } else if (data.status === 'not_found') {
-          showError('❌ İşçi tapılmadı!');
-        } else {
-          showError('❌ Xəta: ' + (data.message || 'Naməlum'));
-        }
-      }catch(err){
-        console.error(err);
-        showError('❌ Bağlantı xətası!');
-      }finally{
-        btn.disabled = false;
-        btn.textContent = 'Daxil ol';
-      }
-    }
-
-    function logout(){
-      localStorage.removeItem('ghg_employee');
-      currentEmployee = null;
-      selectedRating = 0;
-      usedMap = {};
-      qrTextCache = {};
-      qrImageCache = {};
-      document.getElementById('qrPreRender').innerHTML = '';
-
-      hideModal('qrModal');
-      hideModal('ratingModal');
-      setQRBoxHTML('');
-
-      showLogin();
-    }
-
-    /************ Used status ************/
-    async function loadUsedStatuses(){
-      usedMap = {};
-      const date = todayStr();
-      const checks = TICKET_TYPES.map(async (t) => {
-        try{
-          const url = `${SHEET_API_URL}?action=checkScanStatus&id=${encodeURIComponent(currentEmployee.id)}&ticketType=${encodeURIComponent(t.id)}&date=${encodeURIComponent(date)}`;
-          const res = await fetchJSONP(url);
-          usedMap[t.id] = (res.status === 'success' && !!res.used);
-        }catch(e){
-          usedMap[t.id] = false;
-        }
-      });
-      await Promise.all(checks);
-    }
-
-    /************ Tickets ************/
     function renderTickets(){
       const container = document.getElementById('ticketContainer');
       container.innerHTML = '';
 
-      TICKET_TYPES.forEach(type => {
-        const used = !!usedMap[type.id];
+      TICKET_TYPES.forEach(type=>{
         const card = document.createElement('div');
         card.className = 'ticket';
+        card.onclick = ()=> showTicket(type);
 
-        // ONLY CLICK (touchstart removed) to allow smooth scroll
-        card.addEventListener('click', () => {
-          if (isTouchScrolling) return; // swipe zamanı açmasın
-          showTicket(type);
-        });
-
-        let extraBadge = '';
-        if (type.id === 'dry' && currentEmployee){
-          const c = getDryCount();
-          if (c >= 2) extraBadge = ' dup';
-        }
-
+        // UI həmişə aktiv
         card.innerHTML = `
           <div class="icon">${type.icon}</div>
           <div class="name">${type.name}</div>
           <div class="time">${type.time}</div>
-          <div class="badge ${used ? 'used' : 'ok'}${extraBadge}">
-            ${used ? 'İSTİFADƏ EDİLDİ' : (extraBadge ? 'TƏKRAR CƏHD' : 'AKTİV')}
-          </div>
+          <div class="badge">AKTİV</div>
         `;
         container.appendChild(card);
       });
@@ -898,13 +299,11 @@
       const k = keyFor(type.id);
       if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(type);
 
-      // If ready, show instantly
       if (qrImageCache[k]) {
         setQRBoxHTML(`<img alt="QR" src="${qrImageCache[k]}">`);
         return;
       }
 
-      // Fallback: show loading then render quickly
       setQRBoxHTML(`<div class="qrStatusText">Yüklənir...</div>`);
       const url = await renderQRToDataURL(qrTextCache[k]);
       if (url) qrImageCache[k] = url;
@@ -912,7 +311,7 @@
     }
 
     function closeQRModal(e){
-      if (!e || e.target.id === 'qrModal') {
+      if (!e || e.target.id === 'qrModal'){
         hideModal('qrModal');
         setQRBoxHTML('');
       }
@@ -922,12 +321,12 @@
     function renderRatingStars(){
       const wrap = document.getElementById('ratingStars');
       wrap.innerHTML = '';
-      for(let i=1;i<=5;i++){
+      for (let i=1;i<=5;i++){
         const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'starBtn ' + (i <= selectedRating ? 'active' : '');
-        b.innerHTML = '★';
-        b.onclick = () => { selectedRating = i; renderRatingStars(); };
+        b.type='button';
+        b.className = 'starBtn ' + (i<=selectedRating ? 'active' : '');
+        b.textContent = '★';
+        b.onclick = ()=>{ selectedRating=i; renderRatingStars(); };
         wrap.appendChild(b);
       }
     }
@@ -939,7 +338,6 @@
       renderRatingStars();
       openModal('ratingModal');
     }
-
     function closeRatingModal(e){
       if (!e || e.target.id === 'ratingModal') hideModal('ratingModal');
     }
@@ -948,7 +346,6 @@
       const reason = document.getElementById('ratingReason').value.trim();
       const btn = document.getElementById('ratingSubmitBtn');
 
-      if (!currentEmployee) return alert('Əvvəlcə giriş edin.');
       if (!selectedRating) return alert('Zəhmət olmasa ulduz seçin.');
       if (!reason) return alert('Səbəbi yazın.');
 
@@ -958,15 +355,13 @@
       try{
         const url = `${SHEET_API_URL}?action=submitRating&employeeId=${encodeURIComponent(currentEmployee.id)}&ratingStars=${encodeURIComponent(selectedRating)}&ratingText=${encodeURIComponent(reason)}`;
         const res = await fetchJSONP(url);
-
         if (res.status === 'success'){
           alert('Qiymətləndirmə göndərildi ✅');
           closeRatingModal();
         } else {
           alert(res.message || 'Göndərilmədi');
         }
-      }catch(err){
-        console.error(err);
+      }catch(e){
         alert('Bağlantı xətası!');
       }finally{
         btn.disabled = false;
@@ -974,44 +369,79 @@
       }
     }
 
-    /************ Scroll vs tap guard (mobile) ************/
-    document.addEventListener('touchstart', (e)=>{
-      isTouchScrolling = false;
-      touchStartY = (e.touches && e.touches[0]) ? e.touches[0].clientY : 0;
-    }, { passive: true });
+    /************ Login ************/
+    async function handleLogin(e){
+      e.preventDefault();
+      const id = document.getElementById('employeeId').value.trim();
+      const pass = document.getElementById('employeePass').value.trim();
 
-    document.addEventListener('touchmove', (e)=>{
-      const y = (e.touches && e.touches[0]) ? e.touches[0].clientY : 0;
-      if (Math.abs(y - touchStartY) > 8) isTouchScrolling = true;
-    }, { passive: true });
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true;
+      btn.textContent = 'Yoxlanılır...';
 
-    document.addEventListener('touchend', ()=>{
-      // qısa delay: swipe bitəndən dərhal sonra click düşməsin
-      setTimeout(()=>{ isTouchScrolling = false; }, 120);
-    }, { passive: true });
+      try{
+        const url = `${SHEET_API_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}`;
+        const data = await fetchJSONP(url);
 
-    /************ INIT ************/
-    window.onload = async () => {
-      document.getElementById('employeeId').value = localStorage.getItem('ghg_login_id') || '';
-      document.getElementById('employeePass').value = localStorage.getItem('ghg_login_pass') || '';
+        if (data.status === 'success'){
+          currentEmployee = { id, fullName: data.employee.fullName || '' };
+          localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
 
-      const savedEmployee = localStorage.getItem('ghg_employee');
-      if (savedEmployee){
-        currentEmployee = JSON.parse(savedEmployee);
-        showApp();
+          document.getElementById('loginPage').style.display = 'none';
+          document.getElementById('mainApp').style.display = 'block';
+          document.getElementById('mainApp').classList.remove('pageHide');
+          document.getElementById('mainApp').classList.add('pageShow');
+
+          document.getElementById('displayName').textContent = currentEmployee.fullName;
+          document.getElementById('displayId').textContent = currentEmployee.id;
+          document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
+
+          qrTextCache = {};
+          qrImageCache = {};
+          document.getElementById('qrPreRender').innerHTML = '';
+
+          renderTickets();
+        } else if (data.status === 'invalid_pass'){
+          showError('❌ Yanlış parol!');
+        } else if (data.status === 'not_found'){
+          showError('❌ İşçi tapılmadı!');
+        } else {
+          showError('❌ Xəta: ' + (data.message || 'Naməlum'));
+        }
+      }catch(err){
+        showError('❌ Bağlantı xətası!');
+      }finally{
+        btn.disabled = false;
+        btn.textContent = 'Daxil ol';
+      }
+    }
+
+    function logout(){
+      localStorage.removeItem('ghg_employee');
+      currentEmployee = null;
+      selectedRating = 0;
+      qrTextCache = {};
+      qrImageCache = {};
+      document.getElementById('qrPreRender').innerHTML = '';
+      hideModal('qrModal'); hideModal('ratingModal');
+      document.getElementById('mainApp').style.display = 'none';
+      document.getElementById('loginPage').style.display = 'flex';
+    }
+
+    window.onload = () => {
+      const saved = localStorage.getItem('ghg_employee');
+      if (saved){
+        currentEmployee = JSON.parse(saved);
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        document.getElementById('mainApp').classList.remove('pageHide');
+        document.getElementById('mainApp').classList.add('pageShow');
 
         document.getElementById('displayName').textContent = currentEmployee.fullName;
         document.getElementById('displayId').textContent = currentEmployee.id;
         document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
 
-        await loadUsedStatuses();
         renderTickets();
-
-        // FAST load: pre-render meals first
-        prewarmQRText();
-        preRenderPriorityQRImages();
-      } else {
-        showLogin();
       }
     };
   </script>
