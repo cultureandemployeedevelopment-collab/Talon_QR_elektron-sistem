@@ -1,3 +1,4 @@
+// Bu Apps Script həm login (employees), həm də scanner axınlarını idarə edir.
 var EMPLOYEES_FILE_ID = '1tJ_U_EtSF7YCjGahjKYn-w_TDgCuaPZL_tGMJ0ZFOdM';
 var SCANNER_FILE_ID = '-1RAGc0WsyXO6A7fjyad_nJDiLqM22eYREccJdjie3TMw';
 
@@ -212,24 +213,61 @@ function parseQR_(qrData) {
 }
 
 function getEmployeesSpreadsheet_() {
-  try {
-    return SpreadsheetApp.openById(EMPLOYEES_FILE_ID);
-  } catch (e) {
-    return SpreadsheetApp.getActiveSpreadsheet();
-  }
+  return openSpreadsheetById_(EMPLOYEES_FILE_ID, 'Employees');
 }
 
 function getScannerSpreadsheet_() {
+  return openSpreadsheetById_(SCANNER_FILE_ID, 'Scanner');
+}
+
+function openSpreadsheetById_(sheetId, label) {
+  var id = toText_(sheetId);
+  if (!id) {
+    throw new Error(label + ' fayl ID-si təyin edilməyib');
+  }
+
   try {
-    return SpreadsheetApp.openById(SCANNER_FILE_ID);
+    return SpreadsheetApp.openById(id);
   } catch (e) {
-    return SpreadsheetApp.getActiveSpreadsheet();
+    throw new Error(label + ' faylı tapılmadı və ya giriş icazəsi yoxdur (ID: ' + id + ')');
   }
 }
 
 function getEmployeesSheet_() {
-  var ss = getEmployeesSpreadsheet_();
-  return ss.getSheetByName('Cadvel1') || ss.getSheetByName('Cədvəl1') || ss.getSheets()[0];
+  var preferredSheets = ['Cadvel1', 'Cədvəl1', 'Employees', 'Employee'];
+  var candidates = [];
+
+  // 1) Əsas employee faylını yoxla.
+  try {
+    candidates.push(getEmployeesSpreadsheet_());
+  } catch (e) {
+    // employee faylı açılmırsa fallback-lərə keç.
+  }
+
+  // 2) Bəzi quraşdırmalarda employee cədvəli scanner faylında saxlanılır.
+  if (toText_(SCANNER_FILE_ID) && SCANNER_FILE_ID !== EMPLOYEES_FILE_ID) {
+    try {
+      candidates.push(getScannerSpreadsheet_());
+    } catch (e) {
+      // scanner faylı açılmasa belə digər fallback-lərlə davam et.
+    }
+  }
+
+  // 3) Son fallback: bu scriptin bağlı olduğu aktiv spreadsheet.
+  try {
+    candidates.push(SpreadsheetApp.getActiveSpreadsheet());
+  } catch (e) {
+    // aktiv spreadsheet yoxdursa sadəcə mövcud namizədlərlə davam et.
+  }
+
+  for (var i = 0; i < candidates.length; i++) {
+    var sheet = findSheetByNames_(candidates[i], preferredSheets);
+    if (sheet) {
+      return sheet;
+    }
+  }
+
+  throw new Error('Employees cədvəli tapılmadı (Cadvel1/Cədvəl1/Employees)');
 }
 
 function getOrCreateRatingSheet_(ss) {
@@ -248,6 +286,19 @@ function getScannerSheet_() {
     sheet.appendRow(['Tarix', 'Saat', 'DateKey', 'Əməkdaş ID', 'Ad Soyad Ata adı', 'Talon Növü', 'TicketTypeId', 'Talon ID', 'Status']);
   }
   return sheet;
+}
+
+function findSheetByNames_(ss, names) {
+  if (!ss) return null;
+
+  for (var i = 0; i < names.length; i++) {
+    var byName = ss.getSheetByName(names[i]);
+    if (byName) {
+      return byName;
+    }
+  }
+
+  return null;
 }
 
 function ensureRatingHeaders_(sheet) {
