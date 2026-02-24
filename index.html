@@ -4,69 +4,83 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
   <title>GHG Yemək Talonu</title>
+
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
   <style>
     :root{
-      --navy-950:#061326;
-      --navy-900:#071a33;
-      --navy-850:#0b2242;
-      --navy-800:#0e2a52;
-      --navy-700:#123469;
+      --navy-950:#050b16;
+      --navy-900:#070f1f;
+      --navy-850:#09142a;
+      --navy-800:#0b1732;
+
       --blue-500:#2b6cff;
-      --blue-400:#4b86ff;
       --text:#eaf1ff;
-      --muted:rgba(234,241,255,.75);
-      --card:rgba(255,255,255,.08);
-      --stroke:rgba(255,255,255,.14);
-      --shadow: 0 18px 60px rgba(0,0,0,.45);
-      --shadow2: 0 12px 40px rgba(0,0,0,.35);
+      --muted:rgba(234,241,255,.72);
+
+      --stroke:rgba(255,255,255,.10);
+      --shadow: 0 22px 70px rgba(0,0,0,.62);
+      --shadow2: 0 14px 46px rgba(0,0,0,.55);
+
       --radius: 22px;
-      --speed: 260ms;
+      --speed: 240ms;
+
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
     }
 
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
     body{
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      min-height:100vh;
+      min-height:100dvh;
       color:var(--text);
-      background: radial-gradient(1200px 900px at 20% 10%, #0f2f63 0%, transparent 55%),
-                  radial-gradient(900px 700px at 90% 20%, #112c54 0%, transparent 50%),
-                  linear-gradient(140deg, var(--navy-950) 0%, var(--navy-900) 45%, var(--navy-850) 100%);
-      padding:14px;
+
+      /* DARKER BACKGROUND */
+      background:
+        radial-gradient(1200px 900px at 18% 12%, #061634 0%, transparent 55%),
+        radial-gradient(900px 700px at 88% 22%, #07122a 0%, transparent 52%),
+        radial-gradient(800px 650px at 55% 85%, #040a18 0%, transparent 60%),
+        linear-gradient(140deg, var(--navy-950) 0%, var(--navy-900) 40%, var(--navy-850) 100%);
+
+      padding: calc(14px + var(--safe-top)) calc(14px + var(--safe-right)) calc(14px + var(--safe-bottom)) calc(14px + var(--safe-left));
       overflow-x:hidden;
     }
 
-    /* LOGO BACKDROP */
     body::before{
       content:"";
       position:fixed; inset:0;
       pointer-events:none;
-      opacity:.10;
+      opacity:.06;
       background-image: var(--logo);
       background-repeat:no-repeat;
-      background-position: center 20%;
+      background-position: center 18%;
       background-size: 520px auto;
-      filter: drop-shadow(0 18px 70px rgba(0,0,0,.8));
+      filter: drop-shadow(0 18px 70px rgba(0,0,0,.9));
       transform: translateY(-12px);
     }
 
     .wrap{max-width:1060px;margin:0 auto;position:relative}
 
     .glass{
-      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.06));
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
       border:1px solid var(--stroke);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
     }
 
-    /* Animations */
-    @keyframes floatIn {
-      from { transform: translateY(14px); opacity: 0; }
+    .page{ transition: opacity var(--speed) ease, transform var(--speed) ease; }
+    .pageHide{ opacity:0; transform: translateY(12px); pointer-events:none; }
+    .pageShow{ opacity:1; transform: translateY(0); pointer-events:auto; }
+
+    @keyframes slideUp {
+      from { transform: translateY(28px); opacity: 0; }
       to   { transform: translateY(0); opacity: 1; }
     }
-    .animate-in{animation: floatIn 520ms ease both;}
+    .slideUp{ animation: slideUp 520ms cubic-bezier(.2,.9,.2,1) both; }
 
     /* Buttons */
     .btn{
@@ -78,77 +92,174 @@
       border-radius: 16px;
       font-weight:800;
       letter-spacing:.2px;
-      background: linear-gradient(135deg, #163a75 0%, #2b6cff 52%, #1b4db8 100%);
-      box-shadow: 0 14px 34px rgba(43,108,255,.22);
+
+      /* DARKER BUTTON */
+      background: linear-gradient(135deg, #0f2a55 0%, #1f55d9 52%, #103a9d 100%);
+      box-shadow: 0 14px 34px rgba(31,85,217,.20);
+
       transition: transform var(--speed) ease, box-shadow var(--speed) ease, filter var(--speed) ease;
       position:relative;
       overflow:hidden;
+      touch-action: manipulation;
     }
     .btn::after{
       content:"";
       position:absolute; inset:-40% -60%;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.32), transparent 45%);
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), transparent 45%);
       transform: translateX(-35%) rotate(12deg);
       transition: transform 520ms ease;
-      opacity:.65;
+      opacity:.45;
     }
-    .btn:hover{ transform: translateY(-2px); box-shadow: 0 18px 52px rgba(43,108,255,.28); }
+    .btn:hover{ transform: translateY(-2px); box-shadow: 0 18px 52px rgba(31,85,217,.24); }
     .btn:hover::after{ transform: translateX(0) rotate(12deg); }
     .btn:active{ transform: translateY(0); filter:saturate(1.1); }
     .btn:disabled{opacity:.65; cursor:not-allowed; transform:none; box-shadow:none;}
 
     .btn-outline{
-      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
-      border:1px solid rgba(255,255,255,.20);
-      box-shadow: 0 12px 40px rgba(0,0,0,.25);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
     }
 
     .btn-danger{
-      background: linear-gradient(135deg, #7b1d1d 0%, #ef4444 60%, #b91c1c 100%);
-      box-shadow: 0 16px 44px rgba(239,68,68,.18);
+      background: linear-gradient(135deg, #5a1515 0%, #ef4444 60%, #951010 100%);
+      box-shadow: 0 16px 44px rgba(239,68,68,.16);
       width:auto;
       padding:10px 14px;
       border-radius: 999px;
       font-weight:800;
+      cursor:pointer;
+      border:none;
+      color:#fff;
+      transition: transform var(--speed) ease;
+      touch-action: manipulation;
     }
+    .btn-danger:active{ transform: translateY(1px); }
 
     /* Login */
     .login{
-      min-height: calc(100vh - 28px);
-      display:flex; align-items:center; justify-content:center;
+      min-height: calc(100dvh - 28px);
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding-top: clamp(24px, 7vh, 72px);
     }
-    .loginCard{ width:100%; max-width: 430px; padding: 26px; }
+
+    /* Frame */
+    .loginFrame{
+      width:100%;
+      max-width: 440px;
+      border-radius: 26px;
+      position: relative;
+      padding: 2px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transform: translateZ(0);
+      background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.018));
+      border: 1px solid rgba(255,255,255,.09);
+    }
+
+    /* Border-only moving line */
+    .loginFrame .waterLine{
+      position:absolute;
+      inset:0;
+      border-radius: 26px;
+      pointer-events:none;
+      z-index: 2;
+
+      background:
+        linear-gradient(90deg,
+          rgba(255,255,255,0) 0%,
+          rgba(255,255,255,.18) 18%,
+          rgba(255,255,255,.75) 35%,
+          rgba(255,255,255,.18) 55%,
+          rgba(255,255,255,0) 70%) 0 0 / 180% 100%;
+
+      mask:
+        linear-gradient(#000,#000) content-box,
+        linear-gradient(#000,#000);
+      -webkit-mask:
+        linear-gradient(#000,#000) content-box,
+        linear-gradient(#000,#000);
+      padding: 2px;
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+
+      opacity: .80;
+      filter: blur(.25px) drop-shadow(0 0 18px rgba(255,255,255,.35));
+      animation: waterFlow 1.85s linear infinite;
+    }
+
+    /* Stronger edge glow for 3D */
+    .loginFrame::after{
+      content:"";
+      position:absolute;
+      inset:-18px;
+      border-radius: 40px;
+      pointer-events:none;
+      background:
+        radial-gradient(closest-side,
+          rgba(255,255,255,.18),
+          rgba(255,255,255,0) 62%);
+      filter: blur(14px);
+      opacity:.55;
+      z-index:1;
+    }
+
+    @keyframes waterFlow {
+      0%   { background-position: 0% 0; }
+      100% { background-position: 180% 0; }
+    }
+
+    .loginCard{
+      position: relative;
+      z-index: 3;
+      width:100%;
+      padding: 26px;
+      border-radius: 24px;
+
+      /* DARKER CARD */
+      background:
+        radial-gradient(120% 140% at 15% 10%, rgba(255,255,255,.05), rgba(255,255,255,0) 58%),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.09);
+      backdrop-filter: blur(12px);
+
+      box-shadow:
+        0 24px 80px rgba(0,0,0,.55),
+        inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
     .brand{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom: 14px; }
     .brandBadge{
       width:44px;height:44px;border-radius:14px;
-      background: linear-gradient(135deg, rgba(43,108,255,.30), rgba(255,255,255,.08));
-      border:1px solid rgba(255,255,255,.16);
+      background: linear-gradient(135deg, rgba(31,85,217,.22), rgba(255,255,255,.05));
+      border:1px solid rgba(255,255,255,.12);
       display:grid;place-items:center;
       box-shadow: var(--shadow2);
       font-weight: 950;
       letter-spacing: .6px;
     }
     .brandTitle{font-size: 22px;font-weight: 900;}
-    .brandSub{color:var(--muted); font-weight:600; font-size: 13px; text-align:center; margin-bottom: 18px;}
+    .brandSub{color:var(--muted); font-weight:700; font-size: 13px; text-align:center; margin-bottom: 18px;}
 
     label{display:block; color:rgba(234,241,255,.92); font-weight:800; margin: 10px 0 6px;}
     input{
       width:100%;
       padding: 14px 14px;
       border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.045);
       color: var(--text);
       outline:none;
-      transition: border var(--speed) ease, transform var(--speed) ease, background var(--speed) ease;
       font-size: 16px;
     }
     input:focus{
-      border-color: rgba(43,108,255,.55);
-      background: rgba(255,255,255,.09);
-      transform: translateY(-1px);
-      box-shadow: 0 0 0 6px rgba(43,108,255,.12);
+      border-color: rgba(31,85,217,.55);
+      background: rgba(255,255,255,.06);
+      box-shadow: 0 0 0 6px rgba(31,85,217,.12);
     }
+
     .error{
       margin-top: 12px;
       padding: 12px 12px;
@@ -177,11 +288,9 @@
       padding: 8px 12px;
       border-radius: 999px;
       border:1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.06);
+      background: rgba(255,255,255,.055);
     }
-    .muted{color:var(--muted);font-weight:700}
 
-    /* Sections */
     .grid{
       display:grid;
       grid-template-columns: 1fr;
@@ -201,8 +310,8 @@
     .infoBox{
       padding: 12px 14px;
       border-radius: 16px;
-      border:1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
       color: rgba(234,241,255,.92);
       margin-bottom: 14px;
       line-height:1.35;
@@ -220,26 +329,27 @@
     .ticket{
       border-radius: 18px;
       padding: 16px 14px;
-      border:1px solid rgba(255,255,255,.16);
-      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
-      box-shadow: 0 12px 35px rgba(0,0,0,.25);
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: 0 12px 35px rgba(0,0,0,.34);
       cursor:pointer;
-      transition: transform var(--speed) ease, box-shadow var(--speed) ease, border var(--speed) ease, filter var(--speed) ease;
       position:relative;
       overflow:hidden;
+      user-select:none;
+      touch-action: manipulation;
+      transition: transform var(--speed) ease, box-shadow var(--speed) ease, border var(--speed) ease;
     }
     .ticket::before{
       content:"";
       position:absolute; inset:-60% -60%;
-      background: radial-gradient(circle at 30% 35%, rgba(43,108,255,.28), transparent 45%);
+      background: radial-gradient(circle at 30% 35%, rgba(31,85,217,.18), transparent 45%);
       transform: rotate(10deg);
       opacity:.9;
     }
     .ticket:hover{
       transform: translateY(-4px);
-      border-color: rgba(43,108,255,.35);
-      box-shadow: 0 16px 48px rgba(0,0,0,.34);
-      filter: saturate(1.05);
+      border-color: rgba(31,85,217,.32);
+      box-shadow: 0 16px 48px rgba(0,0,0,.44);
     }
     .ticket:active{ transform: translateY(-1px) scale(.985); }
     .ticket .icon{ font-size: 36px; position:relative; }
@@ -263,35 +373,37 @@
     /* Modal */
     .modal{
       position:fixed; inset:0;
-      background: rgba(0,0,0,.70);
+      background: rgba(0,0,0,.78);
       display:none;
       align-items:center;
       justify-content:center;
       padding: 16px;
       z-index: 1000;
     }
+    .modal.show{ display:flex !important; }
     .modalCard{
       width:100%;
       max-width: 430px;
       padding: 18px;
       border-radius: 22px;
-      border:1px solid rgba(255,255,255,.16);
-      background: linear-gradient(180deg, rgba(10,24,48,.92), rgba(6,19,38,.92));
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(6,12,22,.92), rgba(4,8,16,.92));
       box-shadow: var(--shadow);
       backdrop-filter: blur(10px);
       text-align:center;
+      animation: slideUp 320ms cubic-bezier(.2,.9,.2,1) both;
     }
     .modalTitle{ font-size: 18px; font-weight: 950; }
     .modalSub{ margin-top: 8px; color: var(--muted); font-weight:700; }
+
     .qrBox{
       width: 250px; height: 250px;
       margin: 16px auto 10px;
       padding: 14px;
       border-radius: 18px;
-      background: rgba(255,255,255,.96);
+      background: rgba(255,255,255,.97);
       display:grid; place-items:center;
-      box-shadow: 0 16px 44px rgba(0,0,0,.40);
-      transform-origin: center;
+      box-shadow: 0 16px 44px rgba(0,0,0,.50);
     }
 
     /* Rating */
@@ -303,8 +415,9 @@
       cursor:pointer;
       color: rgba(255,255,255,.28);
       transition: transform var(--speed) ease, color var(--speed) ease;
+      touch-action: manipulation;
     }
-    .starBtn:hover{ transform: translateY(-2px) scale(1.03); }
+    .starBtn:active{ transform: translateY(1px) scale(.98); }
     .starBtn.active{ color: #ffbf2f; text-shadow: 0 10px 26px rgba(255,191,47,.25); }
 
     textarea{
@@ -319,41 +432,14 @@
       resize: vertical;
       font-size: 15px;
     }
-    textarea:focus{
-      border-color: rgba(43,108,255,.55);
-      background: rgba(255,255,255,.09);
-      box-shadow: 0 0 0 6px rgba(43,108,255,.12);
-    }
 
     .footer{
       text-align:center;
       margin: 16px 0 6px;
-      color: rgba(234,241,255,.85);
+      color: rgba(234,241,255,.78);
       font-weight: 900;
       letter-spacing:.5px;
     }
-
-    /* ---------- Pro transitions / micro-interactions ---------- */
-    @keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes modalPop {
-      0%   { transform: translateY(14px) scale(.96); opacity: 0; }
-      60%  { transform: translateY(-2px) scale(1.01); opacity: 1; }
-      100% { transform: translateY(0) scale(1); opacity: 1; }
-    }
-    .modal.show{ display:flex !important; animation: modalFade 220ms ease both; }
-    .modal.show .modalCard{ animation: modalPop 320ms cubic-bezier(.2,.9,.2,1) both; }
-
-    @keyframes qrSpinIn {
-      0%   { transform: rotate(-14deg) scale(.86); opacity: 0; filter: blur(1px); }
-      70%  { transform: rotate(3deg) scale(1.02); opacity: 1; filter: blur(0); }
-      100% { transform: rotate(0deg) scale(1); opacity: 1; }
-    }
-    .qrBox.spinIn{ animation: qrSpinIn 420ms cubic-bezier(.2,.9,.2,1) both; }
-
-    /* Smooth page transitions */
-    #loginPage, #mainApp{ transition: opacity 240ms ease, transform 240ms ease; }
-    .pageHide{ opacity:0; transform: translateY(10px); pointer-events:none; }
-    .pageShow{ opacity:1; transform: translateY(0); }
   </style>
 </head>
 
@@ -361,57 +447,60 @@
   <div class="wrap">
 
     <!-- LOGIN -->
-    <div class="login" id="loginPage">
-      <div class="glass loginCard animate-in">
-        <div class="brand">
-          <div class="brandBadge">GHG</div>
-          <div>
-            <div class="brandTitle">GHG Yemək</div>
-            <div class="muted" style="font-weight:800;font-size:12px;">Elektron talon sistemi</div>
+    <div class="login page pageShow slideUp" id="loginPage">
+      <div class="loginFrame">
+        <div class="waterLine"></div>
+        <div class="loginCard">
+          <div class="brand">
+            <div class="brandBadge">GHG</div>
+            <div>
+              <div class="brandTitle">GHG Yemək</div>
+              <div class="brandSub">Elektron talon sistemi</div>
+            </div>
           </div>
+
+          <div class="brandSub" style="margin-top:-6px;">İşçi ID və 4 rəqəmli parol ilə daxil olun</div>
+
+          <form onsubmit="handleLogin(event)">
+            <label>İşçi ID</label>
+            <input id="employeeId" type="text" inputmode="numeric" autocomplete="username" required />
+
+            <label>Parol (4 rəqəm)</label>
+            <input id="employeePass" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" required />
+
+            <div style="height:12px"></div>
+            <button class="btn" id="loginBtn" type="submit">Daxil ol</button>
+
+            <div class="error" id="errorMsg"></div>
+          </form>
         </div>
-
-        <div class="brandSub">İşçi ID və 4 rəqəmli parol ilə daxil olun</div>
-
-        <form onsubmit="handleLogin(event)">
-          <label>İşçi ID</label>
-          <input id="employeeId" type="text" inputmode="numeric" autocomplete="username" required />
-
-          <label>Parol (4 rəqəm)</label>
-          <input id="employeePass" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" required />
-
-          <div style="height:12px"></div>
-          <button class="btn" id="loginBtn" type="submit">Daxil ol</button>
-
-          <div class="error" id="errorMsg"></div>
-        </form>
       </div>
     </div>
 
     <!-- APP -->
-    <div id="mainApp" style="display:none;">
-      <div class="glass topbar animate-in">
+    <div id="mainApp" class="page pageHide" style="display:none;">
+      <div class="glass topbar">
         <div class="who">
           <span class="chip">👤 <span id="displayName"></span></span>
           <span class="chip">🆔 <span id="displayId"></span></span>
-          <span class="chip muted" id="dateInfo"></span>
+          <span class="chip" style="color:var(--muted);" id="dateInfo"></span>
         </div>
         <button class="btn-danger" onclick="logout()">Çıxış</button>
       </div>
 
       <div class="grid">
-        <div class="glass section animate-in">
+        <div class="glass section">
           <div class="sectionTitle">🎫 Talonlarım</div>
           <div class="infoBox">
-            <b>Qaydalar:</b> Hər talon üçün hər gün yeni QR yaranır. Talonlar bir-birini deaktiv etmir — hamısı aktiv qalır.
+            <b>Qaydalar:</b> Hər talon üçün hər gün yeni QR yaranır.
           </div>
           <div class="ticketGrid" id="ticketContainer"></div>
         </div>
 
-        <div class="glass section animate-in">
+        <div class="glass section">
           <div class="sectionTitle">⭐ Yemək qiymətləndirməsi</div>
           <div class="infoBox" style="margin-bottom:12px;">
-            1–5 ulduz seçin və qısa səbəb yazın. Məlumatlar “Yemək qiymətləndirməsi” sheetinə yazılacaq.
+            1–5 ulduz seçin və qısa səbəb yazın.
           </div>
           <button class="btn btn-outline" onclick="openRatingModal()">🍽️ Yeməyi qiymətləndir</button>
         </div>
@@ -428,7 +517,7 @@
       <div class="modalTitle">🎫 Talonunuz hazırdır</div>
       <div class="modalSub" id="qrTicketInfo"></div>
       <div class="qrBox"><div id="modalQR"></div></div>
-      <div class="muted" style="margin-bottom:12px;">Kafeteryada skanerə göstərin</div>
+      <div class="modalSub" style="margin-bottom:12px;">Kafeteryada skanerə göstərin</div>
       <button class="btn btn-outline" onclick="closeQRModal()">Bağla</button>
     </div>
   </div>
@@ -453,9 +542,7 @@
     /************ CONFIG ************/
     const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbx6LGMoy8noFaGkff4xfmqLxdkssZXPjfFIXQimMluPv7QQwn3T5sBqm8Oe3nh7Y-oV/exec';
 
-    // LOGO URL (buraya logonun linkini yazın)
-    // Məs: https://.../ghg.png
-    const LOGO_URL = ''; // <- BURANI DOLDURUN
+    const LOGO_URL = ''; // <- logo linki
     if (LOGO_URL) document.body.style.setProperty('--logo', `url('${LOGO_URL}')`);
 
     const TICKET_TYPES = [
@@ -467,31 +554,60 @@
 
     let currentEmployee = null;
     let selectedRating = 0;
-    let usedMap = {}; // ticketId -> true/false
+    let usedMap = {};
+    let qrInstance = null;
+    let qrCache = {};
 
-    /************ Modal helpers ************/
+    /************ Helpers ************/
     function openModal(id){ document.getElementById(id).classList.add('show'); }
     function hideModal(id){ document.getElementById(id).classList.remove('show'); }
 
-    /************ Date helpers (dd.MM.yyyy) ************/
     function pad2(n){ return String(n).padStart(2,'0'); }
     function todayStr(){
       const d = new Date();
       return `${pad2(d.getDate())}.${pad2(d.getMonth()+1)}.${d.getFullYear()}`;
     }
 
-    /************ QR Generator ************/
-    // Format: GHG|EMPID|TYPECODE|DD.MM.YYYY|HASH|TYPEID
-    function generateDailyQR(type) {
-      const date = todayStr();
-      const base = `${currentEmployee.id}_${date}_${type.code}_${type.id}`;
-      let hash = 0;
-      for (let i = 0; i < base.length; i++) {
-        hash = ((hash << 5) - hash) + base.charCodeAt(i);
-        hash |= 0;
-      }
-      const hashCode = Math.abs(hash % 9000 + 1000);
-      return `GHG|${currentEmployee.id}|${type.code}|${date}|${hashCode}|${type.id}`;
+    function showError(msg){
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function clearQR(){
+      const qrDiv = document.getElementById('modalQR');
+      try { if (qrInstance && typeof qrInstance.clear === 'function') qrInstance.clear(); } catch(e){}
+      qrInstance = null;
+      if (qrDiv) qrDiv.innerHTML = '';
+    }
+
+    function showLogin(){
+      const login = document.getElementById('loginPage');
+      const app = document.getElementById('mainApp');
+
+      app.classList.remove('pageShow');
+      app.classList.add('pageHide');
+      setTimeout(()=>{ app.style.display = 'none'; }, 220);
+
+      login.style.display = 'flex';
+      login.classList.remove('pageHide');
+      login.classList.add('pageShow','slideUp');
+
+      document.getElementById('employeeId').value = localStorage.getItem('ghg_login_id') || '';
+      document.getElementById('employeePass').value = localStorage.getItem('ghg_login_pass') || '';
+    }
+
+    function showApp(){
+      const login = document.getElementById('loginPage');
+      const app = document.getElementById('mainApp');
+
+      login.classList.remove('pageShow');
+      login.classList.add('pageHide');
+      setTimeout(()=>{ login.style.display = 'none'; }, 220);
+
+      app.style.display = 'block';
+      app.classList.remove('pageHide');
+      app.classList.add('pageShow');
     }
 
     /************ JSONP ************/
@@ -520,13 +636,28 @@
       });
     }
 
-    function showError(msg){
-      const el = document.getElementById('errorMsg');
-      el.textContent = msg;
-      el.style.display = 'block';
+    /************ QR Generator ************/
+    function generateDailyQR(type) {
+      const date = todayStr();
+      const base = `${currentEmployee.id}_${date}_${type.code}_${type.id}`;
+      let hash = 0;
+      for (let i = 0; i < base.length; i++) {
+        hash = ((hash << 5) - hash) + base.charCodeAt(i);
+        hash |= 0;
+      }
+      const hashCode = Math.abs(hash % 9000 + 1000);
+      return `GHG|${currentEmployee.id}|${type.code}|${date}|${hashCode}|${type.id}`;
     }
 
-    /************ LOGIN ************/
+    function prewarmQRCodes(){
+      const date = todayStr();
+      TICKET_TYPES.forEach(t=>{
+        const k = `${currentEmployee.id}_${date}_${t.id}`;
+        if (!qrCache[k]) qrCache[k] = generateDailyQR(t);
+      });
+    }
+
+    /************ Login ************/
     async function handleLogin(e){
       e.preventDefault();
       const id = document.getElementById('employeeId').value.trim();
@@ -543,31 +674,23 @@
         if (data.status === 'success') {
           currentEmployee = { id, fullName: data.employee.fullName || '' };
 
-          // ✅ ID + PASS yadda saxla (logoutda silinməsin)
           localStorage.setItem('ghg_login_id', id);
           localStorage.setItem('ghg_login_pass', pass);
-
-          // session
           localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
 
-          // UI: smooth transition
-          const login = document.getElementById('loginPage');
-          const app = document.getElementById('mainApp');
-          login.classList.add('pageHide');
+          usedMap = {};
+          qrCache = {};
+          clearQR();
 
-          setTimeout(async () => {
-            login.style.display = 'none';
-            app.style.display = 'block';
-            app.classList.add('pageShow');
+          showApp();
 
-            document.getElementById('displayName').textContent = currentEmployee.fullName;
-            document.getElementById('displayId').textContent = currentEmployee.id;
-            document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
+          document.getElementById('displayName').textContent = currentEmployee.fullName;
+          document.getElementById('displayId').textContent = currentEmployee.id;
+          document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
 
-            await loadUsedStatuses();
-            renderTickets();
-          }, 220);
-
+          await loadUsedStatuses();
+          renderTickets();
+          prewarmQRCodes();
         } else if (data.status === 'invalid_pass') {
           showError('❌ Yanlış parol!');
         } else if (data.status === 'not_found') {
@@ -584,40 +707,19 @@
       }
     }
 
-    /************ LOGOUT (ID + PASS qalsın) ************/
     function logout(){
-      // ✅ ID və PAROL qalır (ghg_login_id / ghg_login_pass toxunmur)
-      // ✅ Sessiyanı silirik ki, app açıq qalmasın
       localStorage.removeItem('ghg_employee');
-
-      // ✅ UI: app-dən login-ə qayıt (animasiya ilə)
-      const login = document.getElementById('loginPage');
-      const app = document.getElementById('mainApp');
-
-      login.style.display = 'flex';
-      login.classList.remove('pageHide');
-      login.classList.add('pageShow');
-
-      app.classList.add('pageHide');
-      setTimeout(() => { app.style.display = 'none'; }, 220);
-
-      // ✅ inputlara yaddaşdakı ID/PASS-ı yenidən yaz
-      const savedId = localStorage.getItem('ghg_login_id') || '';
-      const savedPass = localStorage.getItem('ghg_login_pass') || '';
-      document.getElementById('employeeId').value = savedId;
-      document.getElementById('employeePass').value = savedPass;
-
-      // ✅ error mesajı varsa təmizlə
-      const err = document.getElementById('errorMsg');
-      if (err) { err.style.display = 'none'; err.textContent = ''; }
-
-      // ✅ session dəyişənlərini də sıfırla
       currentEmployee = null;
       selectedRating = 0;
       usedMap = {};
+      qrCache = {};
+      hideModal('qrModal');
+      hideModal('ratingModal');
+      clearQR();
+      showLogin();
     }
 
-    /************ USED STATUS (scanner log) ************/
+    /************ Used status ************/
     async function loadUsedStatuses(){
       usedMap = {};
       const date = todayStr();
@@ -633,17 +735,19 @@
       await Promise.all(checks);
     }
 
-    /************ RENDER TICKETS ************/
+    /************ Tickets ************/
     function renderTickets(){
       const container = document.getElementById('ticketContainer');
       container.innerHTML = '';
 
       TICKET_TYPES.forEach(type => {
         const used = !!usedMap[type.id];
-
         const card = document.createElement('div');
         card.className = 'ticket';
-        card.onclick = () => showTicket(type);
+
+        const open = () => showTicket(type);
+        card.addEventListener('click', open, { passive: true });
+        card.addEventListener('touchstart', open, { passive: true });
 
         card.innerHTML = `
           <div class="icon">${type.icon}</div>
@@ -656,35 +760,39 @@
     }
 
     function showTicket(type){
-      const qrData = generateDailyQR(type);
+      if (!currentEmployee) return;
 
       document.getElementById('qrTicketInfo').textContent =
         `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
 
-      const qrDiv = document.getElementById('modalQR');
-      qrDiv.innerHTML = '';
-
-      new QRCode(qrDiv, {
-        text: qrData,
-        width: 220,
-        height: 220,
-        correctLevel: QRCode.CorrectLevel.H
-      });
-
-      // Spin animation
-      const qrBox = document.querySelector('#qrModal .qrBox');
-      qrBox.classList.remove('spinIn');
-      void qrBox.offsetWidth;
-      qrBox.classList.add('spinIn');
-
       openModal('qrModal');
+
+      const date = todayStr();
+      const k = `${currentEmployee.id}_${date}_${type.id}`;
+      if (!qrCache[k]) qrCache[k] = generateDailyQR(type);
+      const qrData = qrCache[k];
+
+      requestAnimationFrame(() => {
+        const qrDiv = document.getElementById('modalQR');
+        clearQR();
+        qrDiv.innerHTML = '';
+        qrInstance = new QRCode(qrDiv, {
+          text: qrData,
+          width: 220,
+          height: 220,
+          correctLevel: QRCode.CorrectLevel.L
+        });
+      });
     }
 
     function closeQRModal(e){
-      if (!e || e.target.id === 'qrModal') hideModal('qrModal');
+      if (!e || e.target.id === 'qrModal') {
+        hideModal('qrModal');
+        clearQR();
+      }
     }
 
-    /************ RATING ************/
+    /************ Rating ************/
     function renderRatingStars(){
       const wrap = document.getElementById('ratingStars');
       wrap.innerHTML = '';
@@ -699,6 +807,7 @@
     }
 
     function openRatingModal(){
+      if (!currentEmployee) return;
       selectedRating = 0;
       document.getElementById('ratingReason').value = '';
       renderRatingStars();
@@ -741,20 +850,13 @@
 
     /************ INIT ************/
     window.onload = async () => {
-      // ID/PASS autofill (logoutdan sonra da qalsın)
-      const savedId = localStorage.getItem('ghg_login_id');
-      const savedPass = localStorage.getItem('ghg_login_pass');
-      if (savedId) document.getElementById('employeeId').value = savedId;
-      if (savedPass) document.getElementById('employeePass').value = savedPass;
+      document.getElementById('employeeId').value = localStorage.getItem('ghg_login_id') || '';
+      document.getElementById('employeePass').value = localStorage.getItem('ghg_login_pass') || '';
 
       const savedEmployee = localStorage.getItem('ghg_employee');
       if (savedEmployee){
         currentEmployee = JSON.parse(savedEmployee);
-
-        document.getElementById('loginPage').style.display = 'none';
-        const app = document.getElementById('mainApp');
-        app.style.display = 'block';
-        app.classList.add('pageShow');
+        showApp();
 
         document.getElementById('displayName').textContent = currentEmployee.fullName;
         document.getElementById('displayId').textContent = currentEmployee.id;
@@ -762,6 +864,9 @@
 
         await loadUsedStatuses();
         renderTickets();
+        prewarmQRCodes();
+      } else {
+        showLogin();
       }
     };
   </script>
