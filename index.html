@@ -1,463 +1,769 @@
 <!DOCTYPE html>
 <html lang="az">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GHG Yemək Talonu</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>GHG Yemək Talonu</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    :root{
+      --navy-950:#061326;
+      --navy-900:#071a33;
+      --navy-850:#0b2242;
+      --navy-800:#0e2a52;
+      --navy-700:#123469;
+      --blue-500:#2b6cff;
+      --blue-400:#4b86ff;
+      --text:#eaf1ff;
+      --muted:rgba(234,241,255,.75);
+      --card:rgba(255,255,255,.08);
+      --stroke:rgba(255,255,255,.14);
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --shadow2: 0 12px 40px rgba(0,0,0,.35);
+      --radius: 22px;
+      --speed: 260ms;
+    }
 
-    <style>
-        :root {
-            --bg-dark: #031733;
-            --bg-mid: #062f5f;
-            --bg-soft: #0b4d8d;
-            --accent: #2c8bde;
-            --accent-2: #4ca8ff;
-            --text: #e8f3ff;
-            --panel: rgba(255, 255, 255, 0.95);
-        }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      min-height:100vh;
+      color:var(--text);
+      background: radial-gradient(1200px 900px at 20% 10%, #0f2f63 0%, transparent 55%),
+                  radial-gradient(900px 700px at 90% 20%, #112c54 0%, transparent 50%),
+                  linear-gradient(140deg, var(--navy-950) 0%, var(--navy-900) 45%, var(--navy-850) 100%);
+      padding:14px;
+      overflow-x:hidden;
+    }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    /* LOGO BACKDROP */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      opacity:.10;
+      background-image: var(--logo);
+      background-repeat:no-repeat;
+      background-position: center 20%;
+      background-size: 520px auto;
+      filter: drop-shadow(0 18px 70px rgba(0,0,0,.8));
+      transform: translateY(-12px);
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: var(--text);
-            min-height: 100vh;
-            padding: 12px;
-            background:
-                radial-gradient(circle at 10% 10%, rgba(76,168,255,0.25), transparent 35%),
-                radial-gradient(circle at 90% 20%, rgba(44,139,222,0.25), transparent 35%),
-                linear-gradient(145deg, var(--bg-dark), var(--bg-mid) 45%, #041124);
-        }
+    .wrap{max-width:1060px;margin:0 auto;position:relative}
 
-        .logo-watermark {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            opacity: 0.07;
-            background: center/420px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 240'%3E%3Cg fill='%234ca8ff'%3E%3Cpath d='M80 45l25-18v115l-25 19zM110 27l24-18v150l-24 18zM140 9l24 18v150l-24-18zM170 27l24 18v115l-24-19zM200 45l24 18v80l-24 19z'/%3E%3Ctext x='252' y='102' font-family='Arial' font-size='30' font-weight='700'%3EGABALA%3C/text%3E%3Ctext x='252' y='140' font-family='Arial' font-size='30' font-weight='700'%3EHOSPITALITY%3C/text%3E%3Ctext x='252' y='178' font-family='Arial' font-size='30' font-weight='700'%3EGROUP%3C/text%3E%3C/g%3E%3C/svg%3E");
-        }
+    .glass{
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.06));
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
 
-        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
-        .login-box, .section, .qr-modal-content {
-            background: var(--panel);
-            color: #10243f;
-            border-radius: 22px;
-            box-shadow: 0 14px 45px rgba(0,0,0,0.38);
-            border: 1px solid rgba(76,168,255,0.35);
-            backdrop-filter: blur(6px);
-        }
+    /* Animations */
+    @keyframes floatIn {
+      from { transform: translateY(14px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    .animate-in{animation: floatIn 520ms ease both;}
 
-        .login-box { padding: 30px 25px; width: 100%; max-width: 420px; text-align: center; }
-        .login-box h1 { color: #0b3f79; margin-bottom: 8px; font-size: 1.8em; }
+    /* Buttons */
+    .btn{
+      width:100%;
+      border:none;
+      color:white;
+      cursor:pointer;
+      padding:14px 16px;
+      border-radius: 16px;
+      font-weight:800;
+      letter-spacing:.2px;
+      background: linear-gradient(135deg, #163a75 0%, #2b6cff 52%, #1b4db8 100%);
+      box-shadow: 0 14px 34px rgba(43,108,255,.22);
+      transition: transform var(--speed) ease, box-shadow var(--speed) ease, filter var(--speed) ease;
+      position:relative;
+      overflow:hidden;
+    }
+    .btn::after{
+      content:"";
+      position:absolute; inset:-40% -60%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.32), transparent 45%);
+      transform: translateX(-35%) rotate(12deg);
+      transition: transform 520ms ease;
+      opacity:.65;
+    }
+    .btn:hover{ transform: translateY(-2px); box-shadow: 0 18px 52px rgba(43,108,255,.28); }
+    .btn:hover::after{ transform: translateX(0) rotate(12deg); }
+    .btn:active{ transform: translateY(0); filter:saturate(1.1); }
+    .btn:disabled{opacity:.65; cursor:not-allowed; transform:none; box-shadow:none;}
 
-        .ghg-tag {
-            margin: 10px auto 16px;
-            width: fit-content;
-            padding: 6px 12px;
-            border-radius: 999px;
-            background: linear-gradient(135deg, #d8edff, #f2f9ff);
-            color: #0d4a84;
-            font-size: 13px;
-            font-weight: 700;
-        }
+    .btn-outline{
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.20);
+      box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    }
 
-        .form-group { margin-bottom: 18px; text-align: left; }
-        .form-group label { display: block; margin-bottom: 6px; color: #1b3960; font-weight: 700; }
-        .form-group input {
-            width: 100%; padding: 14px; border: 2px solid #c9dcf3; border-radius: 12px; font-size: 16px;
-            transition: all 0.25s ease;
-        }
-        .form-group input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(44,139,222,0.18); }
+    .btn-danger{
+      background: linear-gradient(135deg, #7b1d1d 0%, #ef4444 60%, #b91c1c 100%);
+      box-shadow: 0 16px 44px rgba(239,68,68,.18);
+      width:auto;
+      padding:10px 14px;
+      border-radius: 999px;
+      font-weight:800;
+    }
 
-        .btn, .logout-btn, .btn-close, .ticket-card {
-            transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease, border-color 0.25s ease;
-        }
+    /* Login */
+    .login{
+      min-height: calc(100vh - 28px);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .loginCard{ width:100%; max-width: 430px; padding: 26px; }
+    .brand{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom: 14px; }
+    .brandBadge{
+      width:44px;height:44px;border-radius:14px;
+      background: linear-gradient(135deg, rgba(43,108,255,.30), rgba(255,255,255,.08));
+      border:1px solid rgba(255,255,255,.16);
+      display:grid;place-items:center;
+      box-shadow: var(--shadow2);
+      font-weight: 950;
+      letter-spacing: .6px;
+    }
+    .brandTitle{font-size: 22px;font-weight: 900;}
+    .brandSub{color:var(--muted); font-weight:600; font-size: 13px; text-align:center; margin-bottom: 18px;}
 
-        .btn {
-            width: 100%; padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-size: 16px;
-            font-weight: 700; color: white;
-            background: linear-gradient(135deg, #0b4d8d 0%, #2c8bde 100%);
-            box-shadow: 0 8px 20px rgba(7, 66, 130, 0.35);
-        }
-        .btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.06); }
-        .btn:active:not(:disabled) { transform: translateY(0); }
-        .btn:disabled { opacity: 0.65; }
+    label{display:block; color:rgba(234,241,255,.92); font-weight:800; margin: 10px 0 6px;}
+    input{
+      width:100%;
+      padding: 14px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.07);
+      color: var(--text);
+      outline:none;
+      transition: border var(--speed) ease, transform var(--speed) ease, background var(--speed) ease;
+      font-size: 16px;
+    }
+    input:focus{
+      border-color: rgba(43,108,255,.55);
+      background: rgba(255,255,255,.09);
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 6px rgba(43,108,255,.12);
+    }
+    .error{
+      margin-top: 12px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(239,68,68,.35);
+      background: rgba(239,68,68,.12);
+      color: #ffd7d7;
+      display:none;
+      font-weight:700;
+    }
 
-        .error-message { color: #c62828; margin-top: 15px; display: none; font-weight: 600; }
-        .main-app { display: none; }
-        .header { text-align: center; color: #fff; margin-bottom: 20px; }
-        .container { max-width: 980px; margin: 0 auto; }
+    /* Header */
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+      padding: 14px 16px;
+      margin-top: 10px;
+    }
+    .who{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      color:rgba(234,241,255,.95);
+      font-weight:800;
+    }
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+    }
+    .muted{color:var(--muted);font-weight:700}
 
-        .user-info {
-            background: rgba(255,255,255,0.12); padding: 12px 20px; border-radius: 25px; display: inline-flex;
-            align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; justify-content: center;
-            border: 1px solid rgba(137,189,255,0.3);
-        }
+    /* Sections */
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 12px;
+    }
+    @media(min-width:900px){
+      .grid{ grid-template-columns: 1.55fr .95fr; align-items:start; }
+    }
+    .section{ padding: 18px; }
+    .sectionTitle{
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      letter-spacing:.2px;
+    }
+    .infoBox{
+      padding: 12px 14px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      color: rgba(234,241,255,.92);
+      margin-bottom: 14px;
+      line-height:1.35;
+    }
 
-        .logout-btn {
-            background: linear-gradient(135deg, #ea4335, #c62828); color: white; border: none;
-            padding: 8px 16px; border-radius: 20px; cursor: pointer;
-        }
-        .logout-btn:hover { transform: translateY(-1px); }
+    /* Tickets */
+    .ticketGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media(min-width:700px){
+      .ticketGrid{ grid-template-columns: repeat(4, 1fr); }
+    }
+    .ticket{
+      border-radius: 18px;
+      padding: 16px 14px;
+      border:1px solid rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
+      box-shadow: 0 12px 35px rgba(0,0,0,.25);
+      cursor:pointer;
+      transition: transform var(--speed) ease, box-shadow var(--speed) ease, border var(--speed) ease, filter var(--speed) ease;
+      position:relative;
+      overflow:hidden;
+    }
+    .ticket::before{
+      content:"";
+      position:absolute; inset:-60% -60%;
+      background: radial-gradient(circle at 30% 35%, rgba(43,108,255,.28), transparent 45%);
+      transform: rotate(10deg);
+      opacity:.9;
+    }
+    .ticket:hover{
+      transform: translateY(-4px);
+      border-color: rgba(43,108,255,.35);
+      box-shadow: 0 16px 48px rgba(0,0,0,.34);
+      filter: saturate(1.05);
+    }
+    .ticket:active{ transform: translateY(-1px) scale(.985); }
+    .ticket .icon{ font-size: 36px; position:relative; }
+    .ticket .name{ font-weight: 950; margin-top: 8px; position:relative; }
+    .ticket .time{ color: var(--muted); font-weight:700; font-size: 12px; margin-top: 4px; position:relative; }
+    .badge{
+      margin-top: 10px;
+      display:inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing:.3px;
+      border:1px solid rgba(255,255,255,.18);
+      position:relative;
+      background: rgba(255,255,255,.06);
+    }
+    .badge.ok{ border-color: rgba(34,197,94,.25); background: rgba(34,197,94,.10); }
+    .badge.used{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.10); }
 
-        .section { padding: 22px; margin-bottom: 16px; }
-        .date-info { text-align: center; color: #4d6077; margin-bottom: 15px; font-weight: 600; }
+    /* Modal */
+    .modal{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.70);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 16px;
+      z-index: 1000;
+    }
+    .modalCard{
+      width:100%;
+      max-width: 430px;
+      padding: 18px;
+      border-radius: 22px;
+      border:1px solid rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(10,24,48,.92), rgba(6,19,38,.92));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      text-align:center;
+    }
+    .modalTitle{ font-size: 18px; font-weight: 950; }
+    .modalSub{ margin-top: 8px; color: var(--muted); font-weight:700; }
+    .qrBox{
+      width: 250px; height: 250px;
+      margin: 16px auto 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.96);
+      display:grid; place-items:center;
+      box-shadow: 0 16px 44px rgba(0,0,0,.40);
+      transform-origin: center;
+    }
 
-        .info-box {
-            background: #eff7ff; border-left: 4px solid var(--accent); padding: 14px;
-            border-radius: 12px; margin-bottom: 20px; color: #0c467d;
-        }
+    /* Rating */
+    .stars{display:flex;justify-content:center;gap:10px;margin:12px 0 10px;}
+    .starBtn{
+      font-size: 32px;
+      background:none;
+      border:none;
+      cursor:pointer;
+      color: rgba(255,255,255,.28);
+      transition: transform var(--speed) ease, color var(--speed) ease;
+    }
+    .starBtn:hover{ transform: translateY(-2px) scale(1.03); }
+    .starBtn.active{ color: #ffbf2f; text-shadow: 0 10px 26px rgba(255,191,47,.25); }
 
-        .ticket-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .ticket-card {
-            background: #f4f9ff; border-radius: 16px; padding: 20px; text-align: center;
-            border: 2px solid #d0e3f7; cursor: pointer;
-        }
-        .ticket-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 10px 18px rgba(11,77,141,0.2); }
+    textarea{
+      width:100%;
+      min-height: 120px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.07);
+      color: var(--text);
+      outline:none;
+      resize: vertical;
+      font-size: 15px;
+    }
+    textarea:focus{
+      border-color: rgba(43,108,255,.55);
+      background: rgba(255,255,255,.09);
+      box-shadow: 0 0 0 6px rgba(43,108,255,.12);
+    }
 
-        .ticket-icon { font-size: 40px; margin-bottom: 8px; }
-        .ticket-name { font-weight: 700; color: #1e314f; }
-        .ticket-time { color: #5f7087; font-size: 0.8em; margin: 5px 0; }
-        .ticket-status { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75em; font-weight: bold; }
-        .status-active { background: #0b4d8d; color: white; }
+    .footer{
+      text-align:center;
+      margin: 16px 0 6px;
+      color: rgba(234,241,255,.85);
+      font-weight: 900;
+      letter-spacing:.5px;
+    }
 
-        .qr-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(1, 12, 28, 0.85); z-index: 1000; justify-content: center; align-items: center; padding: 20px;
-        }
-        .qr-modal-content { padding: 30px; text-align: center; max-width: 420px; width: 100%; }
-        .qr-big { width: 250px; height: 250px; margin: 20px auto; }
+    /* ---------- Pro transitions / micro-interactions ---------- */
+    @keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes modalPop {
+      0%   { transform: translateY(14px) scale(.96); opacity: 0; }
+      60%  { transform: translateY(-2px) scale(1.01); opacity: 1; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .modal.show{ display:flex !important; animation: modalFade 220ms ease both; }
+    .modal.show .modalCard{ animation: modalPop 320ms cubic-bezier(.2,.9,.2,1) both; }
 
-        .btn-close {
-            background: #d8e8f9; color: #163456; padding: 11px 28px; border: none; border-radius: 12px;
-            cursor: pointer; margin-top: 15px; font-weight: 700;
-        }
-        .btn-close:hover { transform: translateY(-1px); }
+    @keyframes qrSpinIn {
+      0%   { transform: rotate(-14deg) scale(.86); opacity: 0; filter: blur(1px); }
+      70%  { transform: rotate(3deg) scale(1.02); opacity: 1; filter: blur(0); }
+      100% { transform: rotate(0deg) scale(1); opacity: 1; }
+    }
+    .qrBox.spinIn{ animation: qrSpinIn 420ms cubic-bezier(.2,.9,.2,1) both; }
 
-        .secondary-btn {
-            margin-top: 14px;
-            background: linear-gradient(135deg, #0f5ea8, #2d92ee);
-            border: 2px solid rgba(255,255,255,0.3);
-            font-size: 17px;
-            letter-spacing: 0.2px;
-        }
-
-        .rating-stars { display: flex; justify-content: center; gap: 8px; margin: 14px 0; }
-        .star-btn { font-size: 32px; background: none; border: none; cursor: pointer; color: #d7d7d7; transition: transform 0.2s ease, color 0.2s ease; }
-        .star-btn:hover { transform: scale(1.1); }
-        .star-btn.active { color: #ffb300; }
-
-        .rating-textarea {
-            width: 100%; min-height: 110px; border: 2px solid #d0e1f4; border-radius: 12px;
-            padding: 12px; font-size: 15px; resize: vertical;
-        }
-
-        .footer-sign {
-            text-align: center; color: rgba(255, 255, 255, 0.95); margin-top: 20px;
-            font-weight: 700; letter-spacing: 0.8px;
-        }
-
-        @media (min-width: 768px) { .ticket-grid { grid-template-columns: repeat(4, 1fr); } }
-    </style>
+    /* Smooth page transitions */
+    #loginPage, #mainApp{ transition: opacity 240ms ease, transform 240ms ease; }
+    .pageHide{ opacity:0; transform: translateY(10px); pointer-events:none; }
+    .pageShow{ opacity:1; transform: translateY(0); }
+  </style>
 </head>
-<body>
-    <div class="logo-watermark"></div>
 
-    <div class="login-container" id="loginPage">
-        <div class="login-box">
-            <h1>🍽️ GHG Yemək</h1>
-            <div class="ghg-tag">GABALA HOSPITALITY GROUP</div>
-            <p>Elektron talon sistemi</p>
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label>İşçi ID</label>
-                    <input type="text" id="employeeId" required>
-                </div>
-                <div class="form-group">
-                    <label>Parol (son 4 rəqəm)</label>
-                    <input type="password" id="employeePass" required>
-                </div>
-                <button type="submit" class="btn" id="loginBtn">Daxil Ol</button>
-            </form>
-            <div class="error-message" id="errorMsg"></div>
+<body style="--logo: url('');">
+  <div class="wrap">
+
+    <!-- LOGIN -->
+    <div class="login" id="loginPage">
+      <div class="glass loginCard animate-in">
+        <div class="brand">
+          <div class="brandBadge">GHG</div>
+          <div>
+            <div class="brandTitle">GHG Yemək</div>
+            <div class="muted" style="font-weight:800;font-size:12px;">Elektron talon sistemi</div>
+          </div>
         </div>
+
+        <div class="brandSub">İşçi ID və 4 rəqəmli parol ilə daxil olun</div>
+
+        <form onsubmit="handleLogin(event)">
+          <label>İşçi ID</label>
+          <input id="employeeId" type="text" inputmode="numeric" autocomplete="username" required />
+
+          <label>Parol (4 rəqəm)</label>
+          <input id="employeePass" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" required />
+
+          <div style="height:12px"></div>
+          <button class="btn" id="loginBtn" type="submit">Daxil ol</button>
+
+          <div class="error" id="errorMsg"></div>
+        </form>
+      </div>
     </div>
 
-    <div class="main-app" id="mainApp">
-        <div class="header">
-            <div class="user-info">
-                <span>👤 <strong id="displayName"></strong></span>
-                <span>|</span>
-                <span>🆔 <span id="displayId"></span></span>
-                <button class="logout-btn" onclick="logout()">Çıxış</button>
-            </div>
-            <h1>🍽️ Yemək Talonlarım</h1>
+    <!-- APP -->
+    <div id="mainApp" style="display:none;">
+      <div class="glass topbar animate-in">
+        <div class="who">
+          <span class="chip">👤 <span id="displayName"></span></span>
+          <span class="chip">🆔 <span id="displayId"></span></span>
+          <span class="chip muted" id="dateInfo"></span>
+        </div>
+        <button class="btn-danger" onclick="logout()">Çıxış</button>
+      </div>
+
+      <div class="grid">
+        <div class="glass section animate-in">
+          <div class="sectionTitle">🎫 Talonlarım</div>
+          <div class="infoBox">
+            <b>Qaydalar:</b> Hər talon üçün hər gün yeni QR yaranır. Talonlar bir-birini deaktiv etmir — hamısı aktiv qalır.
+          </div>
+          <div class="ticketGrid" id="ticketContainer"></div>
         </div>
 
-        <div class="container">
-            <div class="section">
-                <div class="date-info" id="dateInfo"></div>
-                <div class="info-box">
-                    <strong>ℹ️ Talonlar aktiv qalır.</strong><br>
-                    Bütün talonları ayrıca aça bilərsiniz. QR yalnız öz tarixi üçün keçərlidir.
-                </div>
-                <div id="ticketContainer" class="ticket-grid"></div>
-            </div>
-
-            <div class="section">
-                <h3 style="margin-bottom: 10px; color: #2d2d2d;">⭐ Yemək qiymətləndirmə</h3>
-                <p style="color: #666; font-size: 0.95em;">5 ulduzla qiymətləndirib fikrinizi yaza bilərsiniz.</p>
-                <button class="btn secondary-btn" onclick="openRatingModal()">Yeməyi Qiymətləndir</button>
-            </div>
-
-            <div class="footer-sign">By CED</div>
+        <div class="glass section animate-in">
+          <div class="sectionTitle">⭐ Yemək qiymətləndirməsi</div>
+          <div class="infoBox" style="margin-bottom:12px;">
+            1–5 ulduz seçin və qısa səbəb yazın. Məlumatlar “Yemək qiymətləndirməsi” sheetinə yazılacaq.
+          </div>
+          <button class="btn btn-outline" onclick="openRatingModal()">🍽️ Yeməyi qiymətləndir</button>
         </div>
+      </div>
+
+      <div class="footer">By CED</div>
     </div>
 
-    <div class="qr-modal" id="qrModal" onclick="closeModal(event)">
-        <div class="qr-modal-content" onclick="event.stopPropagation()">
-            <h2>🎫 Talonunuz Hazırdır</h2>
-            <p id="qrTicketInfo" style="margin: 10px 0; color: #666;"></p>
-            <div class="qr-big" id="modalQR"></div>
-            <p style="color: #666; font-size: 0.9em;">Bu kodu kafedəki skanerə göstərin</p>
-            <button class="btn-close" onclick="closeModal()">Bağla</button>
-        </div>
+  </div>
+
+  <!-- QR MODAL -->
+  <div class="modal" id="qrModal" onclick="closeQRModal(event)">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <div class="modalTitle">🎫 Talonunuz hazırdır</div>
+      <div class="modalSub" id="qrTicketInfo"></div>
+      <div class="qrBox"><div id="modalQR"></div></div>
+      <div class="muted" style="margin-bottom:12px;">Kafeteryada skanerə göstərin</div>
+      <button class="btn btn-outline" onclick="closeQRModal()">Bağla</button>
     </div>
+  </div>
 
-    <div class="qr-modal" id="ratingModal" onclick="closeRatingModal(event)">
-        <div class="qr-modal-content" onclick="event.stopPropagation()">
-            <h2>⭐ Yemək qiymətləndirmə</h2>
-            <p style="margin-top: 10px; color: #666;">1-5 ulduz seçin və səbəbini yazın</p>
+  <!-- RATING MODAL -->
+  <div class="modal" id="ratingModal" onclick="closeRatingModal(event)">
+    <div class="modalCard" onclick="event.stopPropagation()">
+      <div class="modalTitle">⭐ Yemək qiymətləndirmə</div>
+      <div class="modalSub">1–5 ulduz seçin və səbəb yazın</div>
 
-            <div class="rating-stars" id="ratingStars"></div>
-            <textarea id="ratingReason" class="rating-textarea" placeholder="Məsələn: Yeməklər əladır."></textarea>
+      <div class="stars" id="ratingStars"></div>
+      <textarea id="ratingReason" placeholder="Məsələn: Yeməklər əladır."></textarea>
 
-            <button class="btn" style="margin-top: 14px;" onclick="submitRating()" id="ratingSubmitBtn">Qiymətləndirməni göndər</button>
-            <button class="btn-close" onclick="closeRatingModal()">Bağla</button>
-        </div>
+      <div style="height:12px"></div>
+      <button class="btn" id="ratingSubmitBtn" onclick="submitRating()">Göndər</button>
+      <div style="height:10px"></div>
+      <button class="btn btn-outline" onclick="closeRatingModal()">Bağla</button>
     </div>
+  </div>
 
-    <script>
-        const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwz9n8t92t_0G4_NLacGwWFr_7muv2ADCciUy1OJSbA1AJBcskBodH23qcc6YM8adWA/exec';
+  <script>
+    /************ CONFIG ************/
+    const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbx6LGMoy8noFaGkff4xfmqLxdkssZXPjfFIXQimMluPv7QQwn3T5sBqm8Oe3nh7Y-oV/exec';
 
-        const TICKET_TYPES = [
-            { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00-10:00', code: 'S' },
-            { id: 'lunch', name: 'Günorta Yeməyi', icon: '🌞', time: '12:00-15:00', code: 'G' },
-            { id: 'dinner', name: 'Axşam Yeməyi', icon: '🌙', time: '18:00-21:00', code: 'A' },
-            { id: 'dry', name: 'Quru Talon', icon: '📦', time: 'Hər zaman', code: 'Q' }
-        ];
+    // LOGO URL (buraya logonun linkini yazın)
+    // Məs: https://.../ghg.png
+    const LOGO_URL = ''; // <- BURANI DOLDURUN
+    if (LOGO_URL) document.body.style.setProperty('--logo', `url('${LOGO_URL}')`);
 
-        let currentEmployee = null;
-        let selectedRating = 0;
+    const TICKET_TYPES = [
+      { id: 'breakfast', name: 'Səhər Yeməyi', icon: '🌅', time: '06:00–10:00', code: 'S' },
+      { id: 'lunch',     name: 'Günorta Yeməyi', icon: '🌞', time: '12:00–15:00', code: 'G' },
+      { id: 'dinner',    name: 'Axşam Yeməyi',   icon: '🌙', time: '18:00–21:00', code: 'A' },
+      { id: 'dry',       name: 'Quru Talon',     icon: '📦', time: 'Hər zaman',   code: 'Q' }
+    ];
 
-        function getTodayString() {
-            const today = new Date();
-            return today.getFullYear() + String(today.getMonth() + 1).padStart(2, '0') + String(today.getDate()).padStart(2, '0');
-        }
+    let currentEmployee = null;
+    let selectedRating = 0;
+    let usedMap = {}; // ticketId -> true/false
 
-        function generateDailyQR(type) {
-            const dateStr = getTodayString();
-            const uniqueString = currentEmployee.id + '_' + dateStr + '_' + type.code;
-            let hash = 0;
+    /************ Modal helpers ************/
+    function openModal(id){ document.getElementById(id).classList.add('show'); }
+    function hideModal(id){ document.getElementById(id).classList.remove('show'); }
 
-            for (let i = 0; i < uniqueString.length; i++) {
-                const char = uniqueString.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
+    /************ Date helpers (dd.MM.yyyy) ************/
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function todayStr(){
+      const d = new Date();
+      return `${pad2(d.getDate())}.${pad2(d.getMonth()+1)}.${d.getFullYear()}`;
+    }
 
-            const hashCode = Math.abs(hash % 9000 + 1000);
-            return `GHG|${currentEmployee.id}|${type.code}|${dateStr}|${hashCode}|${type.id}`;
-        }
+    /************ QR Generator ************/
+    // Format: GHG|EMPID|TYPECODE|DD.MM.YYYY|HASH|TYPEID
+    function generateDailyQR(type) {
+      const date = todayStr();
+      const base = `${currentEmployee.id}_${date}_${type.code}_${type.id}`;
+      let hash = 0;
+      for (let i = 0; i < base.length; i++) {
+        hash = ((hash << 5) - hash) + base.charCodeAt(i);
+        hash |= 0;
+      }
+      const hashCode = Math.abs(hash % 9000 + 1000);
+      return `GHG|${currentEmployee.id}|${type.code}|${date}|${hashCode}|${type.id}`;
+    }
 
-        function fetchJSONP(url) {
-            return new Promise((resolve, reject) => {
-                const cb = 'cb_' + Date.now();
-                const script = document.createElement('script');
+    /************ JSONP ************/
+    function fetchJSONP(url) {
+      return new Promise((resolve, reject) => {
+        const cb = 'cb_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+        const script = document.createElement('script');
 
-                window[cb] = (data) => {
-                    delete window[cb];
-                    script.remove();
-                    resolve(data);
-                };
+        window[cb] = (data) => {
+          delete window[cb];
+          script.remove();
+          resolve(data);
+        };
 
-                setTimeout(() => {
-                    delete window[cb];
-                    script.remove();
-                    reject(new Error('Timeout'));
-                }, 10000);
+        const t = setTimeout(() => {
+          if (window[cb]) delete window[cb];
+          script.remove();
+          reject(new Error('Timeout'));
+        }, 12000);
 
-                script.src = url + '&callback=' + cb;
-                document.head.appendChild(script);
-            });
-        }
+        script.onload = () => clearTimeout(t);
+        script.onerror = () => { clearTimeout(t); reject(new Error('Load error')); };
 
-        function setMainUI() {
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
+        script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
+        document.head.appendChild(script);
+      });
+    }
+
+    function showError(msg){
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    /************ LOGIN ************/
+    async function handleLogin(e){
+      e.preventDefault();
+      const id = document.getElementById('employeeId').value.trim();
+      const pass = document.getElementById('employeePass').value.trim();
+
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true;
+      btn.textContent = 'Yoxlanılır...';
+
+      try{
+        const url = `${SHEET_API_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}`;
+        const data = await fetchJSONP(url);
+
+        if (data.status === 'success') {
+          currentEmployee = { id, fullName: data.employee.fullName || '' };
+
+          // ✅ ID + PASS yadda saxla (logoutda silinməsin)
+          localStorage.setItem('ghg_login_id', id);
+          localStorage.setItem('ghg_login_pass', pass);
+
+          // session
+          localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
+
+          // UI: smooth transition
+          const login = document.getElementById('loginPage');
+          const app = document.getElementById('mainApp');
+          login.classList.add('pageHide');
+
+          setTimeout(async () => {
+            login.style.display = 'none';
+            app.style.display = 'block';
+            app.classList.add('pageShow');
+
             document.getElementById('displayName').textContent = currentEmployee.fullName;
             document.getElementById('displayId').textContent = currentEmployee.id;
-            document.getElementById('dateInfo').textContent = '📅 ' + new Date().toLocaleDateString('az-AZ') + ' | Hər gün yeni kodlar';
+            document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
+
+            await loadUsedStatuses();
             renderTickets();
+          }, 220);
+
+        } else if (data.status === 'invalid_pass') {
+          showError('❌ Yanlış parol!');
+        } else if (data.status === 'not_found') {
+          showError('❌ İşçi tapılmadı!');
+        } else {
+          showError('❌ Xəta: ' + (data.message || 'Naməlum'));
         }
+      }catch(err){
+        console.error(err);
+        showError('❌ Bağlantı xətası!');
+      }finally{
+        btn.disabled = false;
+        btn.textContent = 'Daxil ol';
+      }
+    }
 
-        async function handleLogin(e) {
-            e.preventDefault();
-            const id = document.getElementById('employeeId').value.trim();
-            const pass = document.getElementById('employeePass').value.trim();
-            const btn = document.getElementById('loginBtn');
+    /************ LOGOUT (ID + PASS qalsın) ************/
+    function logout(){
+      // ✅ ID və PAROL qalır (ghg_login_id / ghg_login_pass toxunmur)
+      // ✅ Sessiyanı silirik ki, app açıq qalmasın
+      localStorage.removeItem('ghg_employee');
 
-            btn.disabled = true;
-            btn.textContent = 'Yoxlanılır...';
+      // ✅ UI: app-dən login-ə qayıt (animasiya ilə)
+      const login = document.getElementById('loginPage');
+      const app = document.getElementById('mainApp');
 
-            try {
-                const data = await fetchJSONP(`${SHEET_API_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}`);
+      login.style.display = 'flex';
+      login.classList.remove('pageHide');
+      login.classList.add('pageShow');
 
-                if (data.status === 'success') {
-                    currentEmployee = {
-                        id: id,
-                        fullName: data.employee.fullName || [data.employee.firstName, data.employee.lastName, data.employee.fatherName].filter(Boolean).join(' ')
-                    };
+      app.classList.add('pageHide');
+      setTimeout(() => { app.style.display = 'none'; }, 220);
 
-                    localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
-                    localStorage.setItem('ghg_login_id', id);
-                    localStorage.setItem('ghg_login_pass', pass);
-                    setMainUI();
-                } else if (data.status === 'invalid_pass') {
-                    showError('❌ Yanlış parol!');
-                } else if (data.status === 'not_found') {
-                    showError('❌ İşçi tapılmadı!');
-                } else {
-                    showError('❌ Xəta: ' + (data.message || 'Naməlum'));
-                }
-            } catch (err) {
-                showError('❌ Bağlantı xətası!');
-                console.error(err);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Daxil Ol';
-            }
+      // ✅ inputlara yaddaşdakı ID/PASS-ı yenidən yaz
+      const savedId = localStorage.getItem('ghg_login_id') || '';
+      const savedPass = localStorage.getItem('ghg_login_pass') || '';
+      document.getElementById('employeeId').value = savedId;
+      document.getElementById('employeePass').value = savedPass;
+
+      // ✅ error mesajı varsa təmizlə
+      const err = document.getElementById('errorMsg');
+      if (err) { err.style.display = 'none'; err.textContent = ''; }
+
+      // ✅ session dəyişənlərini də sıfırla
+      currentEmployee = null;
+      selectedRating = 0;
+      usedMap = {};
+    }
+
+    /************ USED STATUS (scanner log) ************/
+    async function loadUsedStatuses(){
+      usedMap = {};
+      const date = todayStr();
+      const checks = TICKET_TYPES.map(async (t) => {
+        try{
+          const url = `${SHEET_API_URL}?action=checkScanStatus&id=${encodeURIComponent(currentEmployee.id)}&ticketType=${encodeURIComponent(t.id)}&date=${encodeURIComponent(date)}`;
+          const res = await fetchJSONP(url);
+          usedMap[t.id] = (res.status === 'success' && !!res.used);
+        }catch(e){
+          usedMap[t.id] = false;
         }
+      });
+      await Promise.all(checks);
+    }
 
-        function showError(msg) {
-            const el = document.getElementById('errorMsg');
-            el.textContent = msg;
-            el.style.display = 'block';
+    /************ RENDER TICKETS ************/
+    function renderTickets(){
+      const container = document.getElementById('ticketContainer');
+      container.innerHTML = '';
+
+      TICKET_TYPES.forEach(type => {
+        const used = !!usedMap[type.id];
+
+        const card = document.createElement('div');
+        card.className = 'ticket';
+        card.onclick = () => showTicket(type);
+
+        card.innerHTML = `
+          <div class="icon">${type.icon}</div>
+          <div class="name">${type.name}</div>
+          <div class="time">${type.time}</div>
+          <div class="badge ${used ? 'used' : 'ok'}">${used ? 'İSTİFADƏ EDİLDİ' : 'AKTİV'}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function showTicket(type){
+      const qrData = generateDailyQR(type);
+
+      document.getElementById('qrTicketInfo').textContent =
+        `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
+
+      const qrDiv = document.getElementById('modalQR');
+      qrDiv.innerHTML = '';
+
+      new QRCode(qrDiv, {
+        text: qrData,
+        width: 220,
+        height: 220,
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      // Spin animation
+      const qrBox = document.querySelector('#qrModal .qrBox');
+      qrBox.classList.remove('spinIn');
+      void qrBox.offsetWidth;
+      qrBox.classList.add('spinIn');
+
+      openModal('qrModal');
+    }
+
+    function closeQRModal(e){
+      if (!e || e.target.id === 'qrModal') hideModal('qrModal');
+    }
+
+    /************ RATING ************/
+    function renderRatingStars(){
+      const wrap = document.getElementById('ratingStars');
+      wrap.innerHTML = '';
+      for(let i=1;i<=5;i++){
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'starBtn ' + (i <= selectedRating ? 'active' : '');
+        b.innerHTML = '★';
+        b.onclick = () => { selectedRating = i; renderRatingStars(); };
+        wrap.appendChild(b);
+      }
+    }
+
+    function openRatingModal(){
+      selectedRating = 0;
+      document.getElementById('ratingReason').value = '';
+      renderRatingStars();
+      openModal('ratingModal');
+    }
+
+    function closeRatingModal(e){
+      if (!e || e.target.id === 'ratingModal') hideModal('ratingModal');
+    }
+
+    async function submitRating(){
+      const reason = document.getElementById('ratingReason').value.trim();
+      const btn = document.getElementById('ratingSubmitBtn');
+
+      if (!currentEmployee) return alert('Əvvəlcə giriş edin.');
+      if (!selectedRating) return alert('Zəhmət olmasa ulduz seçin.');
+      if (!reason) return alert('Səbəbi yazın.');
+
+      btn.disabled = true;
+      btn.textContent = 'Göndərilir...';
+
+      try{
+        const url = `${SHEET_API_URL}?action=submitRating&employeeId=${encodeURIComponent(currentEmployee.id)}&ratingStars=${encodeURIComponent(selectedRating)}&ratingText=${encodeURIComponent(reason)}`;
+        const res = await fetchJSONP(url);
+
+        if (res.status === 'success'){
+          alert('Qiymətləndirmə göndərildi ✅');
+          closeRatingModal();
+        } else {
+          alert(res.message || 'Göndərilmədi');
         }
+      }catch(err){
+        console.error(err);
+        alert('Bağlantı xətası!');
+      }finally{
+        btn.disabled = false;
+        btn.textContent = 'Göndər';
+      }
+    }
 
-        function renderTickets() {
-            const container = document.getElementById('ticketContainer');
-            container.innerHTML = '';
+    /************ INIT ************/
+    window.onload = async () => {
+      // ID/PASS autofill (logoutdan sonra da qalsın)
+      const savedId = localStorage.getItem('ghg_login_id');
+      const savedPass = localStorage.getItem('ghg_login_pass');
+      if (savedId) document.getElementById('employeeId').value = savedId;
+      if (savedPass) document.getElementById('employeePass').value = savedPass;
 
-            TICKET_TYPES.forEach(type => {
-                const card = document.createElement('div');
-                card.className = 'ticket-card';
-                card.onclick = () => showTicket(type);
-                card.innerHTML = `
-                    <div class="ticket-icon">${type.icon}</div>
-                    <div class="ticket-name">${type.name}</div>
-                    <div class="ticket-time">${type.time}</div>
-                    <span class="ticket-status status-active">AKTİV</span>
-                `;
-                container.appendChild(card);
-            });
-        }
+      const savedEmployee = localStorage.getItem('ghg_employee');
+      if (savedEmployee){
+        currentEmployee = JSON.parse(savedEmployee);
 
-        function showTicket(type) {
-            const qrData = generateDailyQR(type);
-            document.getElementById('qrTicketInfo').textContent = `${currentEmployee.fullName} | ${type.name}`;
+        document.getElementById('loginPage').style.display = 'none';
+        const app = document.getElementById('mainApp');
+        app.style.display = 'block';
+        app.classList.add('pageShow');
 
-            const qrDiv = document.getElementById('modalQR');
-            qrDiv.innerHTML = '';
-            new QRCode(qrDiv, { text: qrData, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.H });
-            document.getElementById('qrModal').style.display = 'flex';
-        }
+        document.getElementById('displayName').textContent = currentEmployee.fullName;
+        document.getElementById('displayId').textContent = currentEmployee.id;
+        document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
 
-        function closeModal(e) {
-            if (!e || e.target.id === 'qrModal') {
-                document.getElementById('qrModal').style.display = 'none';
-            }
-        }
-
-        function logout() {
-            localStorage.removeItem('ghg_employee');
-            location.reload();
-        }
-
-        function renderRatingStars() {
-            const starsWrap = document.getElementById('ratingStars');
-            starsWrap.innerHTML = '';
-
-            for (let i = 1; i <= 5; i++) {
-                const star = document.createElement('button');
-                star.type = 'button';
-                star.className = `star-btn ${i <= selectedRating ? 'active' : ''}`;
-                star.innerHTML = '★';
-                star.onclick = () => {
-                    selectedRating = i;
-                    renderRatingStars();
-                };
-                starsWrap.appendChild(star);
-            }
-        }
-
-        function openRatingModal() {
-            selectedRating = 0;
-            document.getElementById('ratingReason').value = '';
-            renderRatingStars();
-            document.getElementById('ratingModal').style.display = 'flex';
-        }
-
-        function closeRatingModal(e) {
-            if (!e || e.target.id === 'ratingModal') {
-                document.getElementById('ratingModal').style.display = 'none';
-            }
-        }
-
-        async function submitRating() {
-            const reason = document.getElementById('ratingReason').value.trim();
-            const submitBtn = document.getElementById('ratingSubmitBtn');
-
-            if (!currentEmployee) return alert('Əvvəlcə giriş edin.');
-            if (!selectedRating) return alert('Zəhmət olmasa ulduz seçin.');
-            if (!reason) return alert('Səbəbi yazın.');
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Göndərilir...';
-
-            try {
-                const url = `${SHEET_API_URL}?action=submitRating&employeeId=${encodeURIComponent(currentEmployee.id)}&fullName=${encodeURIComponent(currentEmployee.fullName)}&ratingStars=${encodeURIComponent(selectedRating)}&ratingText=${encodeURIComponent(reason)}`;
-                const response = await fetchJSONP(url);
-
-                if (response.status === 'success') {
-                    alert('Qiymətləndirmə uğurla göndərildi.');
-                    closeRatingModal();
-                } else {
-                    alert(response.message || 'Qiymətləndirmə göndərilmədi.');
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Bağlantı xətası!');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Qiymətləndirməni göndər';
-            }
-        }
-
-        window.onload = () => {
-            const savedLoginId = localStorage.getItem('ghg_login_id');
-            const savedLoginPass = localStorage.getItem('ghg_login_pass');
-            if (savedLoginId) document.getElementById('employeeId').value = savedLoginId;
-            if (savedLoginPass) document.getElementById('employeePass').value = savedLoginPass;
-
-            const saved = localStorage.getItem('ghg_employee');
-            if (saved) {
-                currentEmployee = JSON.parse(saved);
-                setMainUI();
-            }
-        };
-    </script>
+        await loadUsedStatuses();
+        renderTickets();
+      }
+    };
+  </script>
 </body>
 </html>
