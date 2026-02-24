@@ -890,19 +890,6 @@
     async function showTicket(type){
       if (!currentEmployee) return;
 
-      // QURU: 2 dəfə vurandan sonra təkrar cəhd (3-cü və sonrası)
-      if (type.id === 'dry') {
-        const next = incDryCount();
-        if (next > 2) {
-          document.getElementById('qrTicketInfo').textContent =
-            `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
-          openModal('qrModal');
-          setQRBoxHTML(`<div class="qrStatusText">Təkrar cəhd</div>`);
-          renderTickets();
-          return;
-        }
-      }
-
       document.getElementById('qrTicketInfo').textContent =
         `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
 
