@@ -245,10 +245,16 @@ function getEmployeesSheet_() {
   }
 
   // 2) Bəzi quraşdırmalarda employee cədvəli scanner faylında saxlanılır.
+
+  var candidates = [getEmployeesSpreadsheet_()];
+
+  // Bəzi quraşdırmalarda employee cədvəli scanner faylında saxlanılır.
+ main
   if (toText_(SCANNER_FILE_ID) && SCANNER_FILE_ID !== EMPLOYEES_FILE_ID) {
     try {
       candidates.push(getScannerSpreadsheet_());
     } catch (e) {
+ codex/fix-this-issue-yo76xk
       // scanner faylı açılmasa belə digər fallback-lərlə davam et.
     }
   }
@@ -260,6 +266,12 @@ function getEmployeesSheet_() {
     // aktiv spreadsheet yoxdursa sadəcə mövcud namizədlərlə davam et.
   }
 
+
+      // scanner faylı açılmasa belə əsas employee faylı ilə davam et.
+    }
+  }
+
+ main
   for (var i = 0; i < candidates.length; i++) {
     var sheet = findSheetByNames_(candidates[i], preferredSheets);
     if (sheet) {
@@ -267,7 +279,11 @@ function getEmployeesSheet_() {
     }
   }
 
+ codex/fix-this-issue-yo76xk
   throw new Error('Employees cədvəli tapılmadı (Cadvel1/Cədvəl1/Employees)');
+
+  throw new Error('Employees cədvəli tapılmadı (Cadvel1/Cədvəl1)');
+ main
 }
 
 function getOrCreateRatingSheet_(ss) {
