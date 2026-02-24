@@ -38,7 +38,6 @@
       min-height:100dvh;
       color:var(--text);
 
-      /* DARKER BACKGROUND */
       background:
         radial-gradient(1200px 900px at 18% 12%, #061634 0%, transparent 55%),
         radial-gradient(900px 700px at 88% 22%, #07122a 0%, transparent 52%),
@@ -82,7 +81,6 @@
     }
     .slideUp{ animation: slideUp 520ms cubic-bezier(.2,.9,.2,1) both; }
 
-    /* Buttons */
     .btn{
       width:100%;
       border:none;
@@ -93,7 +91,6 @@
       font-weight:800;
       letter-spacing:.2px;
 
-      /* DARKER BUTTON */
       background: linear-gradient(135deg, #0f2a55 0%, #1f55d9 52%, #103a9d 100%);
       box-shadow: 0 14px 34px rgba(31,85,217,.20);
 
@@ -136,7 +133,6 @@
     }
     .btn-danger:active{ transform: translateY(1px); }
 
-    /* Login */
     .login{
       min-height: calc(100dvh - 28px);
       display:flex;
@@ -145,7 +141,6 @@
       padding-top: clamp(24px, 7vh, 72px);
     }
 
-    /* Frame */
     .loginFrame{
       width:100%;
       max-width: 440px;
@@ -159,7 +154,6 @@
       border: 1px solid rgba(255,255,255,.09);
     }
 
-    /* Border-only moving line */
     .loginFrame .waterLine{
       position:absolute;
       inset:0;
@@ -190,7 +184,6 @@
       animation: waterFlow 1.85s linear infinite;
     }
 
-    /* Stronger edge glow for 3D */
     .loginFrame::after{
       content:"";
       position:absolute;
@@ -218,7 +211,6 @@
       padding: 26px;
       border-radius: 24px;
 
-      /* DARKER CARD */
       background:
         radial-gradient(120% 140% at 15% 10%, rgba(255,255,255,.05), rgba(255,255,255,0) 58%),
         linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
@@ -271,7 +263,6 @@
       font-weight:700;
     }
 
-    /* Header */
     .topbar{
       display:flex; align-items:center; justify-content:space-between;
       gap:12px;
@@ -317,7 +308,6 @@
       line-height:1.35;
     }
 
-    /* Tickets */
     .ticketGrid{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -369,8 +359,8 @@
     }
     .badge.ok{ border-color: rgba(34,197,94,.25); background: rgba(34,197,94,.10); }
     .badge.used{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.10); }
+    .badge.dup{ border-color: rgba(250,204,21,.28); background: rgba(250,204,21,.10); }
 
-    /* Modal */
     .modal{
       position:fixed; inset:0;
       background: rgba(0,0,0,.78);
@@ -404,9 +394,25 @@
       background: rgba(255,255,255,.97);
       display:grid; place-items:center;
       box-shadow: 0 16px 44px rgba(0,0,0,.50);
+      overflow:hidden;
+    }
+    .qrBox img{
+      width:220px; height:220px;
+      image-rendering: pixelated;
+    }
+    .qrStatusText{
+      width:100%;
+      height:100%;
+      display:grid;
+      place-items:center;
+      color:#0b1732;
+      font-weight: 950;
+      letter-spacing:.3px;
+      font-size: 18px;
+      background: radial-gradient(circle at 30% 25%, rgba(0,0,0,.10), transparent 55%);
+      border-radius: 14px;
     }
 
-    /* Rating */
     .stars{display:flex;justify-content:center;gap:10px;margin:12px 0 10px;}
     .starBtn{
       font-size: 32px;
@@ -439,6 +445,18 @@
       color: rgba(234,241,255,.78);
       font-weight: 900;
       letter-spacing:.5px;
+    }
+
+    /* Hidden QR pre-render area */
+    #qrPreRender{
+      position: fixed;
+      left: -99999px;
+      top: -99999px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -492,7 +510,7 @@
         <div class="glass section">
           <div class="sectionTitle">🎫 Talonlarım</div>
           <div class="infoBox">
-            <b>Qaydalar:</b> Hər talon üçün hər gün yeni QR yaranır.
+            <b>Qaydalar:</b> Hər talon üçün hər gün yeni QR yaranır. Talonlar bir-birini deaktiv etmir — hamısı aktiv qalır.
           </div>
           <div class="ticketGrid" id="ticketContainer"></div>
         </div>
@@ -500,7 +518,7 @@
         <div class="glass section">
           <div class="sectionTitle">⭐ Yemək qiymətləndirməsi</div>
           <div class="infoBox" style="margin-bottom:12px;">
-            1–5 ulduz seçin və qısa səbəb yazın.
+            1–5 ulduz seçin və qısa səbəb yazın. Məlumatlar “Yemək qiymətləndirməsi” sheetinə yazılacaq.
           </div>
           <button class="btn btn-outline" onclick="openRatingModal()">🍽️ Yeməyi qiymətləndir</button>
         </div>
@@ -538,10 +556,12 @@
     </div>
   </div>
 
+  <!-- OFFSCREEN QR RENDER -->
+  <div id="qrPreRender"></div>
+
   <script>
     /************ CONFIG ************/
     const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbx6LGMoy8noFaGkff4xfmqLxdkssZXPjfFIXQimMluPv7QQwn3T5sBqm8Oe3nh7Y-oV/exec';
-
     const LOGO_URL = ''; // <- logo linki
     if (LOGO_URL) document.body.style.setProperty('--logo', `url('${LOGO_URL}')`);
 
@@ -555,8 +575,10 @@
     let currentEmployee = null;
     let selectedRating = 0;
     let usedMap = {};
-    let qrInstance = null;
-    let qrCache = {};
+
+    // Speed: store ready-to-show QR images (dataURL)
+    let qrTextCache = {};   // key -> qrText
+    let qrImageCache = {};  // key -> dataURL
 
     /************ Helpers ************/
     function openModal(id){ document.getElementById(id).classList.add('show'); }
@@ -572,13 +594,6 @@
       const el = document.getElementById('errorMsg');
       el.textContent = msg;
       el.style.display = 'block';
-    }
-
-    function clearQR(){
-      const qrDiv = document.getElementById('modalQR');
-      try { if (qrInstance && typeof qrInstance.clear === 'function') qrInstance.clear(); } catch(e){}
-      qrInstance = null;
-      if (qrDiv) qrDiv.innerHTML = '';
     }
 
     function showLogin(){
@@ -608,6 +623,11 @@
       app.style.display = 'block';
       app.classList.remove('pageHide');
       app.classList.add('pageShow');
+    }
+
+    function setQRBoxHTML(html){
+      const qrDiv = document.getElementById('modalQR');
+      qrDiv.innerHTML = html;
     }
 
     /************ JSONP ************/
@@ -649,12 +669,102 @@
       return `GHG|${currentEmployee.id}|${type.code}|${date}|${hashCode}|${type.id}`;
     }
 
-    function prewarmQRCodes(){
+    function keyFor(typeId){
+      const date = todayStr();
+      return `${currentEmployee.id}_${date}_${typeId}`;
+    }
+
+    function prewarmQRText(){
       const date = todayStr();
       TICKET_TYPES.forEach(t=>{
         const k = `${currentEmployee.id}_${date}_${t.id}`;
-        if (!qrCache[k]) qrCache[k] = generateDailyQR(t);
+        if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(t);
       });
+    }
+
+    // SUPER FAST: generate QR images to dataURL offscreen right after entering the page
+    async function preRenderAllQRImages(){
+      if (!currentEmployee) return;
+      const pre = document.getElementById('qrPreRender');
+      pre.innerHTML = '';
+
+      const order = ['breakfast','lunch','dinner','dry']; // prioritize meals
+      for (const id of order){
+        const t = TICKET_TYPES.find(x=>x.id===id);
+        if (!t) continue;
+
+        const k = keyFor(t.id);
+        if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(t);
+        if (qrImageCache[k]) continue;
+
+        await renderQRToDataURL(qrTextCache[k]).then(url=>{
+          if (url) qrImageCache[k] = url;
+        });
+
+        // yield to UI so phone won't freeze
+        await new Promise(r=>setTimeout(r, 0));
+      }
+    }
+
+    function renderQRToDataURL(text){
+      return new Promise((resolve)=>{
+        const pre = document.getElementById('qrPreRender');
+        const holder = document.createElement('div');
+        pre.appendChild(holder);
+
+        // Render
+        new QRCode(holder, {
+          text,
+          width: 220,
+          height: 220,
+          correctLevel: QRCode.CorrectLevel.L
+        });
+
+        // Wait a tick then read canvas/img
+        requestAnimationFrame(()=>{
+          try{
+            const canvas = holder.querySelector('canvas');
+            if (canvas) {
+              const url = canvas.toDataURL('image/png');
+              holder.remove();
+              return resolve(url);
+            }
+            const img = holder.querySelector('img');
+            if (img) {
+              if (img.complete && img.naturalWidth) {
+                const url = img.src;
+                holder.remove();
+                return resolve(url);
+              }
+              img.onload = () => {
+                const url = img.src;
+                holder.remove();
+                resolve(url);
+              };
+              img.onerror = () => {
+                holder.remove();
+                resolve(null);
+              };
+              return;
+            }
+          }catch(e){}
+          holder.remove();
+          resolve(null);
+        });
+      });
+    }
+
+    /************ Quru talon click limiter ************/
+    function dryCountKey(){
+      return `ghg_dry_count_${currentEmployee.id}_${todayStr()}`;
+    }
+    function getDryCount(){
+      return Number(localStorage.getItem(dryCountKey()) || '0');
+    }
+    function incDryCount(){
+      const n = getDryCount() + 1;
+      localStorage.setItem(dryCountKey(), String(n));
+      return n;
     }
 
     /************ Login ************/
@@ -679,8 +789,9 @@
           localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
 
           usedMap = {};
-          qrCache = {};
-          clearQR();
+          qrTextCache = {};
+          qrImageCache = {};
+          document.getElementById('qrPreRender').innerHTML = '';
 
           showApp();
 
@@ -690,7 +801,10 @@
 
           await loadUsedStatuses();
           renderTickets();
-          prewarmQRCodes();
+
+          // IMPORTANT: prewarm immediately and start pre-render right away
+          prewarmQRText();
+          preRenderAllQRImages(); // async, fills cache fast
         } else if (data.status === 'invalid_pass') {
           showError('❌ Yanlış parol!');
         } else if (data.status === 'not_found') {
@@ -712,10 +826,14 @@
       currentEmployee = null;
       selectedRating = 0;
       usedMap = {};
-      qrCache = {};
+      qrTextCache = {};
+      qrImageCache = {};
+      document.getElementById('qrPreRender').innerHTML = '';
+
       hideModal('qrModal');
       hideModal('ratingModal');
-      clearQR();
+      setQRBoxHTML('');
+
       showLogin();
     }
 
@@ -749,46 +867,68 @@
         card.addEventListener('click', open, { passive: true });
         card.addEventListener('touchstart', open, { passive: true });
 
+        // For quru talon, show extra info if already 2+ clicks today (optional)
+        let extraBadge = '';
+        if (type.id === 'dry' && currentEmployee){
+          const c = getDryCount();
+          if (c >= 2) extraBadge = ' dup';
+        }
+
         card.innerHTML = `
           <div class="icon">${type.icon}</div>
           <div class="name">${type.name}</div>
           <div class="time">${type.time}</div>
-          <div class="badge ${used ? 'used' : 'ok'}">${used ? 'İSTİFADƏ EDİLDİ' : 'AKTİV'}</div>
+          <div class="badge ${used ? 'used' : 'ok'}${extraBadge}">
+            ${used ? 'İSTİFADƏ EDİLDİ' : (extraBadge ? 'TƏKRAR CƏHD' : 'AKTİV')}
+          </div>
         `;
         container.appendChild(card);
       });
     }
 
-    function showTicket(type){
+    async function showTicket(type){
       if (!currentEmployee) return;
+
+      // QURU TALON: after 2 taps show "Təkrar cəhd"
+      if (type.id === 'dry') {
+        const next = incDryCount();
+        if (next > 2) {
+          document.getElementById('qrTicketInfo').textContent =
+            `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
+
+          openModal('qrModal');
+          setQRBoxHTML(`<div class="qrStatusText">Təkrar cəhd</div>`);
+          // refresh badge on cards
+          renderTickets();
+          return;
+        }
+      }
 
       document.getElementById('qrTicketInfo').textContent =
         `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
 
       openModal('qrModal');
 
-      const date = todayStr();
-      const k = `${currentEmployee.id}_${date}_${type.id}`;
-      if (!qrCache[k]) qrCache[k] = generateDailyQR(type);
-      const qrData = qrCache[k];
+      // instant: if image exists show immediately, else generate quickly then cache
+      const k = keyFor(type.id);
+      if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(type);
 
-      requestAnimationFrame(() => {
-        const qrDiv = document.getElementById('modalQR');
-        clearQR();
-        qrDiv.innerHTML = '';
-        qrInstance = new QRCode(qrDiv, {
-          text: qrData,
-          width: 220,
-          height: 220,
-          correctLevel: QRCode.CorrectLevel.L
-        });
-      });
+      if (qrImageCache[k]) {
+        setQRBoxHTML(`<img alt="QR" src="${qrImageCache[k]}">`);
+        return;
+      }
+
+      // fallback (first time only): render -> cache -> show
+      setQRBoxHTML(`<div class="qrStatusText">Yüklənir...</div>`);
+      const url = await renderQRToDataURL(qrTextCache[k]);
+      if (url) qrImageCache[k] = url;
+      setQRBoxHTML(url ? `<img alt="QR" src="${url}">` : `<div class="qrStatusText">Xəta</div>`);
     }
 
     function closeQRModal(e){
       if (!e || e.target.id === 'qrModal') {
         hideModal('qrModal');
-        clearQR();
+        setQRBoxHTML('');
       }
     }
 
@@ -864,7 +1004,10 @@
 
         await loadUsedStatuses();
         renderTickets();
-        prewarmQRCodes();
+
+        // Make QR instant right after page enters
+        prewarmQRText();
+        preRenderAllQRImages();
       } else {
         showLogin();
       }
