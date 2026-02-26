@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
   <title>GHG Yemək Talonu</title>
 
-  <!-- QRCodeJS (div içinə img/canvas yaradır) -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
   <style>
@@ -39,7 +38,6 @@
       border-radius:var(--radius);
       box-shadow:var(--shadow);
       backdrop-filter:blur(12px);
-      -webkit-backdrop-filter:blur(12px);
     }
 
     .btn{
@@ -76,7 +74,6 @@
       padding:26px;border-radius:24px;border:1px solid rgba(255,255,255,.09);
       background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       backdrop-filter:blur(12px);
-      -webkit-backdrop-filter:blur(12px);
       max-width:440px;width:100%;
       position:relative;
       box-shadow:0 24px 70px rgba(0,0,0,.62), 0 18px 40px rgba(0,0,0,.45);
@@ -129,6 +126,12 @@
     @keyframes thinMove{ to{ stroke-dashoffset:-760; } }
     @keyframes auroraMove{ to{ stroke-dashoffset:-760; } }
 
+    .loginCard.loginFlipOut{
+      transition:transform 650ms cubic-bezier(.2,.85,.2,1), opacity 650ms ease;
+      transform:rotateY(180deg) translateY(-4px) scale(.98);
+      opacity:0; pointer-events:none;
+    }
+
     label{display:block;color:rgba(234,241,255,.92);font-weight:800;margin:10px 0 6px;}
     input{
       width:100%;padding:14px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.12);
@@ -167,28 +170,18 @@
 
     /* ===== MODAL ===== */
     .modal{
-      position:fixed;inset:0;background:rgba(0,0,0,.78);
-      display:none;align-items:center;justify-content:center;
-      padding:16px;
-      z-index:9999;              /* ✅ daha yüksək */
-      isolation:isolate;         /* ✅ stacking fix */
-      touch-action:none;
+      position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;
+      padding:16px;z-index:1000;touch-action:none;
     }
     .modal.show{display:flex!important;}
-
     .modalCard{
       width:100%;max-width:430px;padding:18px;border-radius:22px;border:1px solid rgba(255,255,255,.14);
       background:linear-gradient(180deg, rgba(6,12,22,.92), rgba(4,8,16,.92));
-      box-shadow:var(--shadow);
-      backdrop-filter:blur(10px);
-      -webkit-backdrop-filter:blur(10px);
-      text-align:center;
-
-      position:relative;
-      z-index:10000;             /* ✅ overlay üstündə */
-      transform: translateZ(0);  /* ✅ Samsung/WebView stabil */
-      will-change: transform, opacity;
-
+      box-shadow:var(--shadow);backdrop-filter:blur(10px);text-align:center;
+      transform: translateY(0) scale(1);
+      opacity:1;
+    }
+    .modal.show .modalCard{
       transform: translateY(10px) scale(.985);
       opacity:0;
       animation: modalPop 260ms ease forwards;
@@ -200,14 +193,28 @@
       display:grid;place-items:center;box-shadow:0 16px 44px rgba(0,0,0,.50);overflow:hidden;
       position:relative;
     }
-
-    /* QRCodeJS img/canvas ölçüləri */
-    #modalQR img, #modalQR canvas{
-      width:220px !important;
-      height:220px !important;
-      border-radius:12px;
-      display:block;
+    .qrBox::before{
+      content:"";
+      position:absolute; inset:-40%;
+      background: linear-gradient(120deg, transparent 40%, rgba(0,0,0,.08) 50%, transparent 60%);
+      transform: translateX(-60%) rotate(10deg);
+      animation: sheen 1.8s ease-in-out infinite;
+      opacity:.48;
+      pointer-events:none;
     }
+    @keyframes sheen{
+      0%{ transform: translateX(-70%) rotate(10deg); opacity:.10; }
+      45%{ opacity:.48; }
+      100%{ transform: translateX(70%) rotate(10deg); opacity:.08; }
+    }
+    .qrBox img{
+      width:220px;height:220px;image-rendering:pixelated;
+      transform: scale(.94);
+      opacity:0;
+      animation: qrIn 220ms ease forwards;
+      border-radius:12px;
+    }
+    @keyframes qrIn{to{ transform: scale(1); opacity:1; }}
 
     .qrLoader{
       width:40px;height:40px;border-radius:999px;
@@ -217,6 +224,16 @@
     }
     @keyframes spin{ to{ transform: rotate(360deg); } }
 
+    .qrStatusText{
+      width:100%;height:100%;display:grid;place-items:center;color:#0b1732;font-weight:950;font-size:16px;
+      background:rgba(0,0,0,.04);border-radius:14px;
+    }
+    .qrManualCode{
+      margin-top:10px;padding:10px 12px;border-radius:12px;
+      background:rgba(255,255,255,.92);color:#0b1732;border:1px dashed rgba(11,23,50,.35);
+      font-size:12px;font-weight:900;word-break:break-all;
+    }
+
     .stars{display:flex;justify-content:center;gap:10px;margin:12px 0 10px;}
     .starBtn{font-size:32px;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.28);touch-action:manipulation;}
     .starBtn.active{color:#ffbf2f;}
@@ -224,18 +241,10 @@
       width:100%;min-height:120px;padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.16);
       background:rgba(255,255,255,.07);color:var(--text);outline:none;resize:vertical;font-size:15px;
     }
+    #qrPreRender{position:fixed;left:-99999px;top:-99999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;}
 
     .rememberRow{display:flex;align-items:center;gap:10px;margin-top:12px;color:rgba(234,241,255,.85);font-weight:800;}
     .rememberRow input{width:18px;height:18px;padding:0;border-radius:6px}
-
-    /* ✅ Samsung / Android blur bug fix: class="noBlur" olanda blur söndür */
-    .noBlur .glass,
-    .noBlur .modalCard,
-    .noBlur .loginCard{
-      backdrop-filter:none !important;
-      -webkit-backdrop-filter:none !important;
-    }
-    .noBlur .modal{ background: rgba(0,0,0,.72) !important; }
 
     @media (prefers-reduced-motion: reduce){
       *{animation:none!important;transition:none!important}
@@ -336,9 +345,7 @@
     </div>
   </div>
 
-  <footer style="margin-top:18px;text-align:center;color:rgba(234,241,255,.72);font-weight:700;">
-    Korporativ Mədəniyyət və İşçilərin İnkişafı komandası tərəfindən hazırlanıb.
-  </footer>
+  <footer style="margin-top:18px;text-align:center;color:rgba(234,241,255,.72);font-weight:700;">Korporativ Mədəniyyət və İşçilərin İnkişafı komandası tərəfindən hazırlanıb.</footer>
 
   <!-- QR MODAL -->
   <div class="modal" id="qrModal" onclick="closeQRModal(event)">
@@ -367,21 +374,10 @@
     </div>
   </div>
 
-  <script>
-    /***********************
-     * ✅ Samsung/Android 16 qara ekran fix
-     * - blur söndür (noBlur)
-     ***********************/
-    (function(){
-      const ua = navigator.userAgent || "";
-      const isSamsung = /SamsungBrowser|SM-|Samsung/i.test(ua);
-      const isAndroid = /Android/i.test(ua);
-      if (isAndroid && isSamsung) document.documentElement.classList.add("noBlur");
-    })();
+  <!-- OFFSCREEN PRE-RENDER (fallback üçün qalır) -->
+  <div id="qrPreRender"></div>
 
-    /***********************
-     * CONFIG
-     ***********************/
+  <script>
     const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxPTavehaF1IspVtwr6KoVPls4OZLjIQDqpDEvKTXGOcswihjN5WMhgzPgbl7-t7PaG/exec';
 
     const TICKET_TYPES = [
@@ -394,8 +390,8 @@
     let currentEmployee = null;
     let selectedRating = 0;
 
-    // QR cache (günə görə)
-    const qrTextCache = {};
+    let qrTextCache = {};
+    let qrImageCache = {}; // saxlanır (digər hissələrə təsir etməsin)
 
     /* ===== Remember password (localStorage) ===== */
     const CREDS_KEY = 'ghg_creds';
@@ -406,7 +402,6 @@
       catch(e){ return null; }
     }
     function clearCreds(){ localStorage.removeItem(CREDS_KEY); }
-
     function applySavedCredsToForm(){
       const c = loadCreds();
       if (!c) return;
@@ -416,7 +411,7 @@
       if (chk) chk.checked = true;
     }
 
-    /* ===== 3D login interaction ===== */
+    /* ===== 3D login interaction (mouse/tilt) ===== */
     function setupLogin3D(){
       const card = document.getElementById('loginCard');
       const area = document.getElementById('loginPage');
@@ -434,10 +429,14 @@
         card.style.setProperty('--mx', (px*100).toFixed(1) + '%');
         card.style.setProperty('--my', (py*100).toFixed(1) + '%');
 
-        card.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+        if (!card.classList.contains('loginFlipOut')){
+          card.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+        }
       }
       function reset(){
-        card.style.transform = `rotateX(0deg) rotateY(0deg)`;
+        if (!card.classList.contains('loginFlipOut')){
+          card.style.transform = `rotateX(0deg) rotateY(0deg)`;
+        }
         card.style.setProperty('--mx','50%');
         card.style.setProperty('--my','20%');
       }
@@ -449,20 +448,3 @@
         const t = e.touches && e.touches[0];
         if (!t) return;
         setFromPoint(t.clientX, t.clientY);
-      }, {passive:true});
-      area.addEventListener('touchend', reset);
-
-      reset();
-    }
-
-    function pad2(n){ return String(n).padStart(2,'0'); }
-    function todayStr(){
-      const d = new Date();
-      return `${pad2(d.getDate())}.${pad2(d.getMonth()+1)}.${d.getFullYear()}`;
-    }
-
-    function showError(msg){
-      const el = document.getElementById('errorMsg');
-      el.textContent = msg;
-      el.style.display = 'block';
-    }
