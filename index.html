@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
   <title>GHG Yemək Talonu</title>
 
+  <!-- QRCodeJS (div içinə img/canvas yaradır) -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
   <style>
@@ -38,6 +39,7 @@
       border-radius:var(--radius);
       box-shadow:var(--shadow);
       backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
     }
 
     .btn{
@@ -74,6 +76,7 @@
       padding:26px;border-radius:24px;border:1px solid rgba(255,255,255,.09);
       background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
       max-width:440px;width:100%;
       position:relative;
       box-shadow:0 24px 70px rgba(0,0,0,.62), 0 18px 40px rgba(0,0,0,.45);
@@ -126,12 +129,6 @@
     @keyframes thinMove{ to{ stroke-dashoffset:-760; } }
     @keyframes auroraMove{ to{ stroke-dashoffset:-760; } }
 
-    .loginCard.loginFlipOut{
-      transition:transform 650ms cubic-bezier(.2,.85,.2,1), opacity 650ms ease;
-      transform:rotateY(180deg) translateY(-4px) scale(.98);
-      opacity:0; pointer-events:none;
-    }
-
     label{display:block;color:rgba(234,241,255,.92);font-weight:800;margin:10px 0 6px;}
     input{
       width:100%;padding:14px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.12);
@@ -170,18 +167,28 @@
 
     /* ===== MODAL ===== */
     .modal{
-      position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;
-      padding:16px;z-index:1000;touch-action:none;
+      position:fixed;inset:0;background:rgba(0,0,0,.78);
+      display:none;align-items:center;justify-content:center;
+      padding:16px;
+      z-index:9999;              /* ✅ daha yüksək */
+      isolation:isolate;         /* ✅ stacking fix */
+      touch-action:none;
     }
     .modal.show{display:flex!important;}
+
     .modalCard{
       width:100%;max-width:430px;padding:18px;border-radius:22px;border:1px solid rgba(255,255,255,.14);
       background:linear-gradient(180deg, rgba(6,12,22,.92), rgba(4,8,16,.92));
-      box-shadow:var(--shadow);backdrop-filter:blur(10px);text-align:center;
-      transform: translateY(0) scale(1);
-      opacity:1;
-    }
-    .modal.show .modalCard{
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+      text-align:center;
+
+      position:relative;
+      z-index:10000;             /* ✅ overlay üstündə */
+      transform: translateZ(0);  /* ✅ Samsung/WebView stabil */
+      will-change: transform, opacity;
+
       transform: translateY(10px) scale(.985);
       opacity:0;
       animation: modalPop 260ms ease forwards;
@@ -193,28 +200,14 @@
       display:grid;place-items:center;box-shadow:0 16px 44px rgba(0,0,0,.50);overflow:hidden;
       position:relative;
     }
-    .qrBox::before{
-      content:"";
-      position:absolute; inset:-40%;
-      background: linear-gradient(120deg, transparent 40%, rgba(0,0,0,.08) 50%, transparent 60%);
-      transform: translateX(-60%) rotate(10deg);
-      animation: sheen 1.8s ease-in-out infinite;
-      opacity:.48;
-      pointer-events:none;
-    }
-    @keyframes sheen{
-      0%{ transform: translateX(-70%) rotate(10deg); opacity:.10; }
-      45%{ opacity:.48; }
-      100%{ transform: translateX(70%) rotate(10deg); opacity:.08; }
-    }
-    .qrBox img{
-      width:220px;height:220px;image-rendering:pixelated;
-      transform: scale(.94);
-      opacity:0;
-      animation: qrIn 220ms ease forwards;
+
+    /* QRCodeJS img/canvas ölçüləri */
+    #modalQR img, #modalQR canvas{
+      width:220px !important;
+      height:220px !important;
       border-radius:12px;
+      display:block;
     }
-    @keyframes qrIn{to{ transform: scale(1); opacity:1; }}
 
     .qrLoader{
       width:40px;height:40px;border-radius:999px;
@@ -224,16 +217,6 @@
     }
     @keyframes spin{ to{ transform: rotate(360deg); } }
 
-    .qrStatusText{
-      width:100%;height:100%;display:grid;place-items:center;color:#0b1732;font-weight:950;font-size:16px;
-      background:rgba(0,0,0,.04);border-radius:14px;
-    }
-    .qrManualCode{
-      margin-top:10px;padding:10px 12px;border-radius:12px;
-      background:rgba(255,255,255,.92);color:#0b1732;border:1px dashed rgba(11,23,50,.35);
-      font-size:12px;font-weight:900;word-break:break-all;
-    }
-
     .stars{display:flex;justify-content:center;gap:10px;margin:12px 0 10px;}
     .starBtn{font-size:32px;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.28);touch-action:manipulation;}
     .starBtn.active{color:#ffbf2f;}
@@ -241,10 +224,18 @@
       width:100%;min-height:120px;padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.16);
       background:rgba(255,255,255,.07);color:var(--text);outline:none;resize:vertical;font-size:15px;
     }
-    #qrPreRender{position:fixed;left:-99999px;top:-99999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;}
 
     .rememberRow{display:flex;align-items:center;gap:10px;margin-top:12px;color:rgba(234,241,255,.85);font-weight:800;}
     .rememberRow input{width:18px;height:18px;padding:0;border-radius:6px}
+
+    /* ✅ Samsung / Android blur bug fix: class="noBlur" olanda blur söndür */
+    .noBlur .glass,
+    .noBlur .modalCard,
+    .noBlur .loginCard{
+      backdrop-filter:none !important;
+      -webkit-backdrop-filter:none !important;
+    }
+    .noBlur .modal{ background: rgba(0,0,0,.72) !important; }
 
     @media (prefers-reduced-motion: reduce){
       *{animation:none!important;transition:none!important}
@@ -345,7 +336,9 @@
     </div>
   </div>
 
-  <footer style="margin-top:18px;text-align:center;color:rgba(234,241,255,.72);font-weight:700;">Korporativ Mədəniyyət və İşçilərin İnkişafı komandası tərəfindən hazırlanıb.</footer>
+  <footer style="margin-top:18px;text-align:center;color:rgba(234,241,255,.72);font-weight:700;">
+    Korporativ Mədəniyyət və İşçilərin İnkişafı komandası tərəfindən hazırlanıb.
+  </footer>
 
   <!-- QR MODAL -->
   <div class="modal" id="qrModal" onclick="closeQRModal(event)">
@@ -374,10 +367,21 @@
     </div>
   </div>
 
-  <!-- OFFSCREEN PRE-RENDER (fallback üçün qalır) -->
-  <div id="qrPreRender"></div>
-
   <script>
+    /***********************
+     * ✅ Samsung/Android 16 qara ekran fix
+     * - blur söndür (noBlur)
+     ***********************/
+    (function(){
+      const ua = navigator.userAgent || "";
+      const isSamsung = /SamsungBrowser|SM-|Samsung/i.test(ua);
+      const isAndroid = /Android/i.test(ua);
+      if (isAndroid && isSamsung) document.documentElement.classList.add("noBlur");
+    })();
+
+    /***********************
+     * CONFIG
+     ***********************/
     const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxPTavehaF1IspVtwr6KoVPls4OZLjIQDqpDEvKTXGOcswihjN5WMhgzPgbl7-t7PaG/exec';
 
     const TICKET_TYPES = [
@@ -390,8 +394,8 @@
     let currentEmployee = null;
     let selectedRating = 0;
 
-    let qrTextCache = {};
-    let qrImageCache = {}; // saxlanır (digər hissələrə təsir etməsin)
+    // QR cache (günə görə)
+    const qrTextCache = {};
 
     /* ===== Remember password (localStorage) ===== */
     const CREDS_KEY = 'ghg_creds';
@@ -402,6 +406,7 @@
       catch(e){ return null; }
     }
     function clearCreds(){ localStorage.removeItem(CREDS_KEY); }
+
     function applySavedCredsToForm(){
       const c = loadCreds();
       if (!c) return;
@@ -411,7 +416,7 @@
       if (chk) chk.checked = true;
     }
 
-    /* ===== 3D login interaction (mouse/tilt) ===== */
+    /* ===== 3D login interaction ===== */
     function setupLogin3D(){
       const card = document.getElementById('loginCard');
       const area = document.getElementById('loginPage');
@@ -429,14 +434,10 @@
         card.style.setProperty('--mx', (px*100).toFixed(1) + '%');
         card.style.setProperty('--my', (py*100).toFixed(1) + '%');
 
-        if (!card.classList.contains('loginFlipOut')){
-          card.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
-        }
+        card.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
       }
       function reset(){
-        if (!card.classList.contains('loginFlipOut')){
-          card.style.transform = `rotateX(0deg) rotateY(0deg)`;
-        }
+        card.style.transform = `rotateX(0deg) rotateY(0deg)`;
         card.style.setProperty('--mx','50%');
         card.style.setProperty('--my','20%');
       }
@@ -465,440 +466,3 @@
       el.textContent = msg;
       el.style.display = 'block';
     }
-    function clearError(){
-      const el = document.getElementById('errorMsg');
-      el.textContent = '';
-      el.style.display = 'none';
-    }
-
-    function openModal(id){
-      const m = document.getElementById(id);
-      m.classList.add('show');
-      document.documentElement.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
-    }
-    function hideModal(id){
-      const m = document.getElementById(id);
-      m.classList.remove('show');
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-    }
-
-    function showAppAfterFlip(){
-      document.getElementById('loginPage').style.display = 'none';
-      const app = document.getElementById('mainApp');
-      app.style.display = 'block';
-      app.classList.remove('fadeIn');
-      void app.offsetWidth;
-      app.classList.add('fadeIn');
-    }
-
-    function showLogin(){
-      document.getElementById('mainApp').style.display = 'none';
-      document.getElementById('loginPage').style.display = 'flex';
-    }
-
-    function animateLoginToApp(){
-      const card = document.getElementById('loginCard');
-      card.style.transform = 'rotateX(0deg) rotateY(0deg)';
-      card.classList.add('loginFlipOut');
-      setTimeout(showAppAfterFlip, 650);
-    }
-
-    function resetLoginCard(){
-      const card = document.getElementById('loginCard');
-      card.classList.remove('loginFlipOut');
-      card.style.transform = 'rotateX(0deg) rotateY(0deg)';
-      clearError();
-
-      document.getElementById('employeeId').value = '';
-      document.getElementById('employeePass').value = '';
-      const chk = document.getElementById('rememberCreds');
-      if (chk) chk.checked = false;
-
-      applySavedCredsToForm();
-    }
-
-    function fetchJSONP(url) {
-      return new Promise((resolve, reject) => {
-        const cb = 'cb_' + Date.now() + '_' + Math.floor(Math.random()*1000);
-        const script = document.createElement('script');
-
-        window[cb] = (data) => {
-          delete window[cb];
-          script.remove();
-          resolve(data);
-        };
-
-        const t = setTimeout(() => {
-          if (window[cb]) delete window[cb];
-          script.remove();
-          reject(new Error('Timeout'));
-        }, 12000);
-
-        script.onerror = () => { clearTimeout(t); reject(new Error('Load error')); };
-        script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
-        document.head.appendChild(script);
-      });
-    }
-
-    function generateDailyQR(type) {
-      const date = todayStr();
-      const base = `${currentEmployee.id}_${date}_${type.code}_${type.id}`;
-      let hash = 0;
-      for (let i=0;i<base.length;i++){
-        hash = ((hash<<5)-hash)+base.charCodeAt(i);
-        hash |= 0;
-      }
-      const hashCode = Math.abs(hash % 9000 + 1000);
-      return `GHG|${currentEmployee.id}|${type.code}|${date}|${hashCode}|${type.id}`;
-    }
-
-    function keyFor(typeId){
-      return `${currentEmployee.id}_${todayStr()}_${typeId}`;
-    }
-
-    function renderQRToDataURL(text){
-      return new Promise((resolve)=>{
-        const pre = document.getElementById('qrPreRender');
-        const holder = document.createElement('div');
-        pre.appendChild(holder);
-
-        try{
-          new QRCode(holder, {
-            text,
-            width: 220,
-            height: 220,
-            correctLevel: QRCode.CorrectLevel.L
-          });
-        }catch(e){
-          holder.remove();
-          return resolve(null);
-        }
-
-        // Android üçün bir az gecikmə + 2 frame
-        requestAnimationFrame(()=>requestAnimationFrame(()=>{
-          try{
-            const canvas = holder.querySelector('canvas');
-            if (canvas){
-              const url = canvas.toDataURL('image/png');
-              holder.remove();
-              return resolve(url);
-            }
-            const img = holder.querySelector('img');
-            if (img){
-              if (img.complete && img.naturalWidth){
-                const url = img.src;
-                holder.remove();
-                return resolve(url);
-              }
-              img.onload = ()=>{ const url = img.src; holder.remove(); resolve(url); };
-              img.onerror = ()=>{ holder.remove(); resolve(null); };
-              return;
-            }
-          }catch(e){}
-          holder.remove();
-          resolve(null);
-        }));
-      });
-    }
-
-    function setQRBoxHTML(html){
-      document.getElementById('modalQR').innerHTML = html;
-    }
-
-    /* ===== 3-cü fallback: Xarici QR şəkil servisi ===== */
-    function externalQRUrl(text){
-      return 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(text);
-    }
-
-    function renderQRDirectInto(el, text){
-      el.innerHTML = '';
-      try{
-        if (typeof QRCode === 'undefined') return false;
-        new QRCode(el, {
-          text,
-          width: 220,
-          height: 220,
-          correctLevel: QRCode.CorrectLevel.L
-        });
-        return true;
-      }catch(e){
-        return false;
-      }
-    }
-
-    function renderManualQRFallback(text){
-      setQRBoxHTML(`<div class="qrStatusText" style="padding:12px;text-align:center;">
-        <div>
-          <div style="font-size:15px;font-weight:950;">QR göstərilmədi</div>
-          <div style="margin-top:6px;font-weight:800;font-size:13px;">Operator bu kodu əl ilə daxil edə bilər:</div>
-          <div class="qrManualCode">${text}</div>
-        </div>
-      </div>`);
-    }
-
-    function renderExternalQRWithFallback(text){
-      return new Promise((resolve)=>{
-        const img = new Image();
-        img.alt = 'QR';
-        img.onload = ()=>{
-          setQRBoxHTML('');
-          const box = document.getElementById('modalQR');
-          if (!box) return resolve(false);
-          box.appendChild(img);
-          resolve(true);
-        };
-        img.onerror = ()=> resolve(false);
-        img.src = externalQRUrl(text);
-      });
-    }
-    /* =================================================== */
-
-    async function preloadAllQRCodes(){
-      if (!currentEmployee) return;
-
-      // text cache
-      for (const t of TICKET_TYPES){
-        const k = keyFor(t.id);
-        if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(t);
-      }
-
-      // əvvəlki davranış qalsın (digər hissələrə toxunmamaq üçün)
-      const jobs = TICKET_TYPES.map(async (t)=>{
-        const k = keyFor(t.id);
-        if (qrImageCache[k]) return;
-        const url = await renderQRToDataURL(qrTextCache[k]);
-        if (url) qrImageCache[k] = url;
-      });
-
-      await Promise.all(jobs);
-    }
-
-    function renderTickets(){
-      const container = document.getElementById('ticketContainer');
-      container.innerHTML = '';
-
-      TICKET_TYPES.forEach(type=>{
-        const card = document.createElement('div');
-        card.className = 'ticket';
-        card.onclick = ()=> showTicket(type);
-        card.innerHTML = `
-          <div class="icon">${type.icon}</div>
-          <div class="name">${type.name}</div>
-          <div class="time">${type.time}</div>
-          <div class="badge">AKTİV</div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    /* ===== QR göstərmə: 3 mərhələli fallback (cəmi bu hissə fərqlidir) ===== */
-    async function showTicket(type){
-      if (!currentEmployee) return;
-
-      document.getElementById('qrTicketInfo').textContent =
-        `${currentEmployee.fullName} • ${type.name} • ${todayStr()}`;
-
-      openModal('qrModal');
-
-      const k = keyFor(type.id);
-      if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(type);
-      const text = qrTextCache[k];
-
-      setQRBoxHTML(`<div class="qrStatusText"><div style="display:grid;place-items:center;gap:10px;">
-        <div class="qrLoader"></div>
-        <div style="font-weight:900;">Yüklənir...</div>
-      </div></div>`);
-
-      // modal DOM otursun
-      await new Promise(r => setTimeout(r, 50));
-
-      const box = document.getElementById('modalQR');
-
-      // 1) Primary: birbaşa QRCode render
-      const ok = renderQRDirectInto(box, text);
-
-      // 2 frame gözlə (bəzən WebView gec render edir)
-      await new Promise(r => requestAnimationFrame(()=>requestAnimationFrame(r)));
-
-      if (ok && box.querySelector('canvas, img, table')) return;
-
-      // 2) Fallback: dataURL img
-      setQRBoxHTML(`<div class="qrStatusText"><div style="display:grid;place-items:center;gap:10px;">
-        <div class="qrLoader"></div>
-        <div style="font-weight:900;">Alternativ üsul...</div>
-      </div></div>`);
-
-      const url = await renderQRToDataURL(text);
-      if (url){
-        setQRBoxHTML(`<img alt="QR" src="${url}">`);
-        return;
-      }
-
-      // 3) Final fallback: xarici servis
-      setQRBoxHTML(`<div class="qrStatusText"><div style="display:grid;place-items:center;gap:10px;">
-        <div class="qrLoader"></div>
-        <div style="font-weight:900;">Onlayn alternativ yoxlanılır...</div>
-      </div></div>`);
-
-      const externalOk = await renderExternalQRWithFallback(text);
-      if (externalOk) return;
-
-      // 4) Son çıxış yolu: əl ilə daxil edilə bilən kod
-      renderManualQRFallback(text);
-    }
-    /* ====================================================================== */
-
-    function closeQRModal(e){
-      if (!e || e.target.id === 'qrModal'){
-        hideModal('qrModal');
-        setQRBoxHTML('');
-      }
-    }
-
-    function renderRatingStars(){
-      const wrap = document.getElementById('ratingStars');
-      wrap.innerHTML = '';
-      for (let i=1;i<=5;i++){
-        const b = document.createElement('button');
-        b.type='button';
-        b.className = 'starBtn ' + (i<=selectedRating ? 'active' : '');
-        b.textContent = '★';
-        b.onclick = ()=>{ selectedRating=i; renderRatingStars(); };
-        wrap.appendChild(b);
-      }
-    }
-
-    function openRatingModal(){
-      if (!currentEmployee) return;
-      selectedRating = 0;
-      document.getElementById('ratingReason').value = '';
-      renderRatingStars();
-      openModal('ratingModal');
-    }
-    function closeRatingModal(e){
-      if (!e || e.target.id === 'ratingModal') hideModal('ratingModal');
-    }
-
-    async function submitRating(){
-      const reason = document.getElementById('ratingReason').value.trim();
-      const btn = document.getElementById('ratingSubmitBtn');
-
-      if (!selectedRating) return alert('Zəhmət olmasa ulduz seçin.');
-      if (!reason) return alert('Səbəbi yazın.');
-
-      btn.disabled = true;
-      btn.textContent = 'Göndərilir...';
-
-      try{
-        const url = `${SHEET_API_URL}?action=submitRating&employeeId=${encodeURIComponent(currentEmployee.id)}&ratingStars=${encodeURIComponent(selectedRating)}&ratingText=${encodeURIComponent(reason)}`;
-        const res = await fetchJSONP(url);
-        if (res.status === 'success'){
-          alert('Qiymətləndirmə göndərildi ✅');
-          closeRatingModal();
-        } else {
-          alert(res.message || 'Göndərilmədi');
-        }
-      }catch(e){
-        alert('Bağlantı xətası!');
-      }finally{
-        btn.disabled = false;
-        btn.textContent = 'Göndər';
-      }
-    }
-
-    async function handleLogin(e){
-      e.preventDefault();
-      clearError();
-
-      const id = document.getElementById('employeeId').value.trim();
-      const pass = document.getElementById('employeePass').value.trim();
-
-      const btn = document.getElementById('loginBtn');
-      btn.disabled = true;
-      btn.textContent = 'Yoxlanılır...';
-
-      try{
-        const url = `${SHEET_API_URL}?action=login&id=${encodeURIComponent(id)}&pass=${encodeURIComponent(pass)}`;
-        const data = await fetchJSONP(url);
-
-        if (data.status === 'success'){
-          currentEmployee = { id, fullName: (data.employee && data.employee.fullName) ? data.employee.fullName : '' };
-          localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
-
-          const remember = document.getElementById('rememberCreds')?.checked;
-          if (remember) saveCreds(id, pass);
-          else clearCreds();
-
-          qrTextCache = {};
-          qrImageCache = {};
-          document.getElementById('qrPreRender').innerHTML = '';
-
-          document.getElementById('displayName').textContent = currentEmployee.fullName;
-          document.getElementById('displayId').textContent = currentEmployee.id;
-          document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
-
-          renderTickets();
-          preloadAllQRCodes();
-
-          animateLoginToApp();
-
-        } else if (data.status === 'invalid_pass'){
-          showError('❌ Yanlış parol!');
-        } else if (data.status === 'not_found'){
-          showError('❌ İşçi tapılmadı!');
-        } else {
-          showError('❌ Xəta: ' + (data.message || 'Naməlum'));
-        }
-      }catch(err){
-        showError('❌ Bağlantı xətası!');
-      }finally{
-        btn.disabled = false;
-        btn.textContent = 'Daxil ol';
-      }
-    }
-
-    function logout(){
-      localStorage.removeItem('ghg_employee');
-      currentEmployee = null;
-      selectedRating = 0;
-
-      qrTextCache = {};
-      qrImageCache = {};
-      document.getElementById('qrPreRender').innerHTML = '';
-
-      hideModal('qrModal');
-      hideModal('ratingModal');
-      setQRBoxHTML('');
-
-      showLogin();
-      resetLoginCard();
-    }
-
-    window.onload = () => {
-      setupLogin3D();
-      applySavedCredsToForm();
-
-      const saved = localStorage.getItem('ghg_employee');
-      if (saved){
-        currentEmployee = JSON.parse(saved);
-
-        qrTextCache = {};
-        qrImageCache = {};
-        document.getElementById('qrPreRender').innerHTML = '';
-
-        document.getElementById('displayName').textContent = currentEmployee.fullName;
-        document.getElementById('displayId').textContent = currentEmployee.id;
-        document.getElementById('dateInfo').textContent = '📅 ' + todayStr();
-
-        renderTickets();
-        preloadAllQRCodes();
-
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
-      }
-    };
-  </script>
-</body>
-</html>
