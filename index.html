@@ -459,7 +459,6 @@
         card.style.setProperty('--mx', (px*100).toFixed(1) + '%');
         card.style.setProperty('--my', (py*100).toFixed(1) + '%');
 
-        // FlipOut anim gələndə bu transform üst-üstə düşməsin deyə: loginFlipOut varsa toxunmuruq
         if (!card.classList.contains('loginFlipOut')){
           card.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
         }
@@ -476,7 +475,6 @@
       area.addEventListener('mousemove', (e)=> setFromPoint(e.clientX, e.clientY));
       area.addEventListener('mouseleave', reset);
 
-      // touch (mobil) — barmaqla azca tilt hissi
       area.addEventListener('touchmove', (e)=>{
         const t = e.touches && e.touches[0];
         if (!t) return;
@@ -533,7 +531,6 @@
 
     function animateLoginToApp(){
       const card = document.getElementById('loginCard');
-      // 3D hover transform-u sıfırla ki flip səliqəli görünsün
       card.style.transform = 'rotateX(0deg) rotateY(0deg)';
       card.classList.add('loginFlipOut');
       setTimeout(showAppAfterFlip, 650);
@@ -545,7 +542,6 @@
       card.style.transform = 'rotateX(0deg) rotateY(0deg)';
       clearError();
 
-      // boşalt və saved varsa doldur
       document.getElementById('employeeId').value = '';
       document.getElementById('employeePass').value = '';
       const chk = document.getElementById('rememberCreds');
@@ -636,6 +632,18 @@
       document.getElementById('modalQR').innerHTML = html;
     }
 
+    /* ====== FIX (Android 10/11): QR-ni birbaşa modal içine render et ====== */
+    function renderQRDirectInto(el, text){
+      el.innerHTML = '';
+      new QRCode(el, {
+        text,
+        width: 220,
+        height: 220,
+        correctLevel: QRCode.CorrectLevel.L
+      });
+    }
+    /* ===================================================================== */
+
     async function preloadAllQRCodes(){
       if (!currentEmployee) return;
 
@@ -683,20 +691,18 @@
       const k = keyFor(type.id);
       if (!qrTextCache[k]) qrTextCache[k] = generateDailyQR(type);
 
+      // loader göstər
       setQRBoxHTML(`<div class="qrStatusText"><div style="display:grid;place-items:center;gap:10px;">
         <div class="qrLoader"></div>
         <div style="font-weight:900;">Yüklənir...</div>
       </div></div>`);
 
-      if (qrImageCache[k]) {
-        setTimeout(()=> setQRBoxHTML(`<img alt="QR" src="${qrImageCache[k]}">`), 60);
-        return;
-      }
+      // Android 10/11 üçün: modal DOM tam otursun
+      await new Promise(r => setTimeout(r, 30));
 
-      const url = await renderQRToDataURL(qrTextCache[k]);
-      if (url) qrImageCache[k] = url;
-
-      setQRBoxHTML(url ? `<img alt="QR" src="${url}">` : `<div class="qrStatusText">Xəta</div>`);
+      // FIX: dataURL/img istifadə etmədən birbaşa modal içində QR render
+      const box = document.getElementById('modalQR');
+      renderQRDirectInto(box, qrTextCache[k]);
     }
 
     function closeQRModal(e){
@@ -776,7 +782,6 @@
           currentEmployee = { id, fullName: (data.employee && data.employee.fullName) ? data.employee.fullName : '' };
           localStorage.setItem('ghg_employee', JSON.stringify(currentEmployee));
 
-          // remember creds only if checkbox
           const remember = document.getElementById('rememberCreds')?.checked;
           if (remember) saveCreds(id, pass);
           else clearCreds();
